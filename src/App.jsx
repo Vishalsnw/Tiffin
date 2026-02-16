@@ -1,20 +1,145 @@
 import React, { useState, useEffect } from 'react';
-import { auth } from './firebase';
+import { auth, googleProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import Login from './Login';
-import { LayoutDashboard, Users, CalendarDays, Wallet, Truck, BarChart3, LogOut, Menu, Moon, Sun, Plus, Search, Filter, Edit2, Trash2, X, Check, Bell, Settings, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarDays, Wallet, Truck, BarChart3, LogOut, Menu, Moon, Sun, Plus, Search, Filter, Edit2, Trash2, X, Check, Bell, Settings, ChevronRight, Phone } from 'lucide-react';
+
+const Auth = () => {
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otp, setOtp] = useState('');
+  const [verificationId, setVerificationId] = useState(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible'
+      });
+    }
+  }, []);
+
+  const handleGoogleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handlePhoneSignIn = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
+      const confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, window.recaptchaVerifier);
+      setVerificationId(confirmationResult);
+    } catch (err) {
+      setError(err.message);
+    }
+    setLoading(false);
+  };
+
+  const handleVerifyOtp = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await verificationId.confirm(otp);
+    } catch (err) {
+      setError(err.message);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4 font-sans">
+      <div className="max-w-md w-full bg-white rounded-[40px] p-8 shadow-xl shadow-blue-100">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-blue-600 rounded-2xl mx-auto mb-4 flex items-center justify-center text-white">
+            <Truck size={32} />
+          </div>
+          <h2 className="text-2xl font-bold">TiffinFlow Pro</h2>
+          <p className="text-gray-500">Sign in to manage your tiffin service</p>
+        </div>
+
+        {error && <div className="bg-red-50 text-red-600 p-4 rounded-2xl mb-6 text-sm">{error}</div>}
+
+        <div className="space-y-4">
+          {!verificationId ? (
+            <>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 ml-1 uppercase">Phone Number (India)</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-400">+91</span>
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="w-full pl-14 pr-4 py-4 bg-gray-50 rounded-2xl border-0 focus:ring-2 focus:ring-blue-500 outline-none"
+                    placeholder="9876543210"
+                  />
+                </div>
+              </div>
+              <button
+                onClick={handlePhoneSignIn}
+                disabled={loading || phoneNumber.length < 10}
+                className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-200 active:scale-95 transition-transform disabled:opacity-50"
+              >
+                {loading ? 'Sending...' : 'Send OTP'}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 ml-1 uppercase">Enter OTP</label>
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  className="w-full px-4 py-4 bg-gray-50 rounded-2xl border-0 focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="123456"
+                />
+              </div>
+              <button
+                onClick={handleVerifyOtp}
+                disabled={loading || otp.length < 6}
+                className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-200 active:scale-95 transition-transform disabled:opacity-50"
+              >
+                {loading ? 'Verifying...' : 'Verify OTP'}
+              </button>
+              <button onClick={() => setVerificationId(null)} className="w-full text-blue-600 font-bold text-sm mt-2">Change Number</button>
+            </>
+          )}
+
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100"></div></div>
+            <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-4 text-gray-400 font-bold">Or continue with</span></div>
+          </div>
+
+          <button
+            onClick={handleGoogleLogin}
+            className="w-full bg-white border border-gray-100 py-4 rounded-2xl font-bold flex items-center justify-center gap-3 active:scale-95 transition-transform"
+          >
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
+            Sign in with Google
+          </button>
+        </div>
+        <div id="recaptcha-container"></div>
+      </div>
+    </div>
+  );
+};
 
 // --- Dashboard Component ---
-const Dashboard = () => (
+const Dashboard = ({ user }) => (
   <div className="p-4 pb-24">
     <div className="flex justify-between items-center mb-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Daily Stats</h2>
-        <p className="text-gray-500 text-sm">Active Admin Panel</p>
+        <p className="text-gray-500 text-sm">Welcome back, {user?.displayName || 'Chef'}!</p>
       </div>
       <div className="flex gap-2">
         <button className="p-2 bg-white rounded-full shadow-sm border border-gray-100"><Bell size={20} /></button>
-        <button className="p-2 bg-white rounded-full shadow-sm border border-gray-100"><Settings size={20} /></button>
+        <button onClick={() => signOut(auth)} className="p-2 bg-white rounded-full shadow-sm border border-gray-100 text-red-500"><LogOut size={20} /></button>
       </div>
     </div>
 
@@ -165,37 +290,29 @@ const Customers = () => {
 
 // --- Main App Component ---
 export default function App() {
-  const [activeTab, setActiveTab] = useState('Dashboard');
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
       setLoading(false);
     });
     return () => unsubscribe();
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-    } catch (err) {
-      console.error('Logout failed', err);
-    }
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
       </div>
     );
   }
 
   if (!user) {
-    return <Login />;
+    return <Auth />;
   }
 
   const menuItems = [
@@ -210,27 +327,11 @@ export default function App() {
     <div className={`min-h-screen font-sans transition-colors duration-300 flex flex-col ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
       
       {/* Dynamic Content Area */}
-      <div className="p-4 flex justify-between items-center bg-white border-b border-gray-100">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black">
-            {user.displayName ? user.displayName[0] : (user.phoneNumber ? '#' : 'U')}
-          </div>
-          <div>
-            <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Admin</p>
-            <p className="text-sm font-bold">{user.displayName || user.phoneNumber || 'User'}</p>
-          </div>
-        </div>
-        <button onClick={handleLogout} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors">
-          <LogOut size={20} />
-        </button>
-      </div>
-
       <main className="flex-1 overflow-y-auto">
-
-        {activeTab === 'Dashboard' && <Dashboard />}
+        {activeTab === 'Dashboard' && <Dashboard user={user} />}
         {activeTab === 'Customers' && <Customers />}
         {!['Dashboard', 'Customers'].includes(activeTab) && (
-          <div className="h-full flex flex-col items-center justify-center p-8 text-center">
+          <div className="h-full flex flex-col items-center justify-center p-8 text-center mt-20">
             <div className="w-20 h-20 bg-blue-50 text-blue-500 rounded-3xl flex items-center justify-center mb-6">
               <CalendarDays size={40} />
             </div>
@@ -241,7 +342,7 @@ export default function App() {
       </main>
 
       {/* Android Style Bottom Navigation */}
-      <nav className={`fixed bottom-0 left-0 right-0 h-20 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t px-4 flex items-center justify-around z-40 pb-2`}>
+      <nav className={`fixed bottom-0 left-0 right-0 h-20 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t px-4 flex items-center justify-around z-40 pb-2 shadow-lg`}>
         {menuItems.map((item) => (
           <button 
             key={item.label}
