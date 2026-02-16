@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { auth } from './firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import Login from './Login';
 import { LayoutDashboard, Users, CalendarDays, Wallet, Truck, BarChart3, LogOut, Menu, Moon, Sun, Plus, Search, Filter, Edit2, Trash2, X, Check, Bell, Settings, ChevronRight } from 'lucide-react';
 
 // --- Dashboard Component ---
@@ -7,7 +10,7 @@ const Dashboard = () => (
     <div className="flex justify-between items-center mb-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Daily Stats</h2>
-        <p className="text-gray-500 text-sm">Welcome back, Chef!</p>
+        <p className="text-gray-500 text-sm">Active Admin Panel</p>
       </div>
       <div className="flex gap-2">
         <button className="p-2 bg-white rounded-full shadow-sm border border-gray-100"><Bell size={20} /></button>
@@ -164,6 +167,36 @@ const Customers = () => {
 export default function App() {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error('Logout failed', err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Login />;
+  }
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard' },
@@ -177,7 +210,23 @@ export default function App() {
     <div className={`min-h-screen font-sans transition-colors duration-300 flex flex-col ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
       
       {/* Dynamic Content Area */}
+      <div className="p-4 flex justify-between items-center bg-white border-b border-gray-100">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black">
+            {user.displayName ? user.displayName[0] : (user.phoneNumber ? '#' : 'U')}
+          </div>
+          <div>
+            <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Admin</p>
+            <p className="text-sm font-bold">{user.displayName || user.phoneNumber || 'User'}</p>
+          </div>
+        </div>
+        <button onClick={handleLogout} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+          <LogOut size={20} />
+        </button>
+      </div>
+
       <main className="flex-1 overflow-y-auto">
+
         {activeTab === 'Dashboard' && <Dashboard />}
         {activeTab === 'Customers' && <Customers />}
         {!['Dashboard', 'Customers'].includes(activeTab) && (
