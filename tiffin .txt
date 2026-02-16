@@ -1,0 +1,183 @@
+“TiffinFlow Pro – Smart Tiffin Management System”
+This is a subscription management and operations platform for small home tiffin providers and cloud kitchens.
+The UI must be modern, clean, minimal, and app-like (similar to a dashboard SaaS, not like a basic website).
+Design must feel premium like a startup product.
+Use Firebase for:
+Authentication
+Database
+Real-time updates
+Hosting-ready structure
+The application must be fully mobile responsive.
+
+TARGET USERS
+Home tiffin providers managing:
+20 to 300 customers
+Veg / Non-Veg / Jain plans
+Monthly / Weekly subscriptions
+Delivery boys
+This is NOT a restaurant ordering app.
+This is an internal business management SaaS.
+
+AUTH SYSTEM
+Phone number and email for India.
+Secure user-based data isolation
+Each business sees only their own data
+Simple onboarding screen after first login
+
+CORE MODULES
+1️⃣ Smart Dashboard (Main Screen)
+Show:
+Total active customers
+Total meals for today
+Veg meals count
+Non-veg meals count
+Jain meals count
+Paused customers today
+Pending payments
+Revenue today
+Revenue this month
+Include:
+Revenue trend graph
+Meal trend graph (last 30 days)
+Modern card-based UI. Large readable numbers. Dark mode support.
+
+Customer Management
+Fields:
+Name
+Phone number
+Address
+Plan type (Monthly / Weekly / Custom)
+Veg / Non-Veg / Jain
+Start date
+End date
+Price
+Assigned delivery person
+Notes (Allergy / Instructions)
+Status (Active / Paused / Expired)
+Features:
+Search bar
+Filters (Plan type / Status / Veg type)
+Quick edit
+Delete confirmation
+
+Subscription Engine
+System must:
+Automatically calculate expiry date
+Track remaining days
+Show “Expiring Soon” badge (3 days before expiry)
+Auto mark expired plans
+Allow easy renewal
+
+Pause / Vacation System (Very Important)
+User must be able to:
+Select date range
+Pause subscription
+System auto adjusts remaining plan duration
+Customer excluded from meal count during pause
+Display paused customers separately.
+
+Daily Meal Planning View
+Dedicated page:
+Show list for today:
+Customer name
+Veg type
+Special instructions
+Delivery area
+Show:
+Total veg meals today
+Total non-veg meals today
+Total Jain meals today
+Allow export to PDF.
+
+Payment Tracking
+Features:
+Payment history
+Payment mode (UPI / Cash / Bank)
+Partial payments
+Outstanding balance auto calculate
+Overdue highlight (red badge)
+Include “Send Reminder” button that generates WhatsApp-ready text.
+
+Delivery Management
+Add delivery staff
+Assign customers
+View delivery list per delivery boy
+Area grouping
+Map link button (open in Google Maps)
+Delivery staff login should only see assigned customers.
+
+Expense & Profit Tracker (Advanced)
+Allow adding:
+Grocery expenses
+Gas
+Salary
+Packaging cost
+Dashboard must show:
+Total revenue
+Total expense
+Net profit
+Monthly analytics graph.
+
+Grocery Planning Assistant
+Admin can set:
+Per-meal ingredient ratio
+System calculates daily requirement based on total meals.
+Example:
+If 80 meals today → show estimated rice, dal requirement.
+
+Analytics Section
+Show:
+Revenue growth graph
+Meal trend graph
+Churn rate (expired vs renewed)
+Average revenue per customer
+Plan distribution chart
+Make it look like a Power BI-style analytics dashboard.
+
+DESIGN REQUIREMENTS
+Clean typography
+Rounded cards
+Soft shadows
+No clutter
+Sidebar navigation
+Collapsible menu for mobile
+Light & Dark theme toggle
+Smooth transitions
+It should look like a funded startup SaaS, not a student project.
+
+BUSINESS LOGIC RULES
+No double counting meals
+Paused days must not count
+Expired plans must not show in daily meal count
+All financial calculations must be accurate
+Data must update in real-time
+
+SUBSCRIPTION SYSTEM (SaaS Ready)
+Prepare structure for:
+Free trial (7 days)
+Paid plan support (future integration)
+Plan limits (e.g., max customers per tier)
+Even if payment gateway not implemented yet, keep architecture ready.
+
+MOBILE FIRST
+Must work perfectly on:
+Android phones
+Small screens
+Touch interactions
+Forms must be simple. No complex tables on mobile.
+
+EXTRA REQUIREMENTS
+Confirmation modals
+Toast notifications
+Loading states
+Empty state illustrations
+Error handling
+Secure Firebase rules structure
+Scalable structure for future updates
+
+END GOAL
+Deliver a production-quality SaaS MVP that:
+Can onboard real tiffin businesses
+Can handle 300+ customers
+Feels professional
+Is scalable
