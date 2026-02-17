@@ -291,13 +291,32 @@ const Customers = () => {
 // --- Planner Component ---
 const Planner = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [menuPlan, setMenuPlan] = useState({
-    breakfast: 'Poha & Jalebi',
-    lunch: 'Dal Tadka, Mix Veg, 4 Roti, Rice, Salad',
-    dinner: 'Paneer Butter Masala, 3 Paratha, Rice'
+  const [dailyPlans, setDailyPlans] = useState(() => {
+    const saved = localStorage.getItem('dailyPlans');
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [defaultPlan, setDefaultPlan] = useState(() => {
+    const saved = localStorage.getItem('defaultPlan');
+    return saved ? JSON.parse(saved) : {
+      breakfast: 'Poha & Jalebi',
+      lunch: 'Dal Tadka, Mix Veg, 4 Roti, Rice, Salad',
+      dinner: 'Paneer Butter Masala, 3 Paratha, Rice'
+    };
   });
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [newMeal, setNewMeal] = useState({ type: 'breakfast', items: '' });
+
+  useEffect(() => {
+    localStorage.setItem('dailyPlans', JSON.stringify(dailyPlans));
+  }, [dailyPlans]);
+
+  useEffect(() => {
+    localStorage.setItem('defaultPlan', JSON.stringify(defaultPlan));
+  }, [defaultPlan]);
+
+  const dateKey = selectedDate.toDateString();
+  const currentPlan = dailyPlans[dateKey] || defaultPlan;
 
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const next7Days = Array.from({ length: 7 }, (_, i) => {
@@ -306,22 +325,34 @@ const Planner = () => {
     return d;
   });
 
-  const handleAddMeal = () => {
+  const handleUpdateMeal = () => {
     if (newMeal.items.trim()) {
-      setMenuPlan(prev => ({
+      setDailyPlans(prev => ({
         ...prev,
-        [newMeal.type]: newMeal.items
+        [dateKey]: {
+          ...currentPlan,
+          [newMeal.type]: newMeal.items
+        }
       }));
       setShowAddModal(false);
-      setNewMeal({ type: 'breakfast', items: '' });
     }
+  };
+
+  const handleUpdateDefault = (type, items) => {
+    setDefaultPlan(prev => ({
+      ...prev,
+      [type]: items
+    }));
   };
 
   return (
     <div className="p-4 pb-24">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Meal Planner</h2>
-        <button className="bg-blue-600 text-white p-3 rounded-2xl shadow-lg shadow-blue-200">
+        <button 
+          onClick={() => setShowSettingsModal(true)}
+          className="bg-blue-600 text-white p-3 rounded-2xl shadow-lg shadow-blue-200 active:scale-95 transition-transform"
+        >
           <Settings size={24} />
         </button>
       </div>
@@ -344,7 +375,7 @@ const Planner = () => {
       </div>
 
       <div className="space-y-4 mt-4">
-        {Object.entries(menuPlan).map(([meal, items], i) => (
+        {Object.entries(currentPlan).map(([meal, items], i) => (
           <div key={meal} className="bg-white p-5 rounded-[32px] shadow-sm border border-gray-50 relative overflow-hidden">
             <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${i === 0 ? 'bg-orange-400' : i === 1 ? 'bg-green-500' : 'bg-blue-500'}`}></div>
             <div className="flex justify-between items-start mb-3">
@@ -370,7 +401,10 @@ const Planner = () => {
         ))}
 
         <button 
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {
+            setNewMeal({ type: 'special', items: '' });
+            setShowAddModal(true);
+          }}
           className="w-full py-5 border-2 border-dashed border-gray-200 rounded-[32px] text-gray-400 font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform"
         >
           <Plus size={20} /> Add Special Item
@@ -382,23 +416,10 @@ const Planner = () => {
           <div className="bg-white rounded-t-[40px] w-full max-w-md p-8 animate-in slide-in-from-bottom duration-300">
             <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-8"></div>
             <div className="flex justify-between items-center mb-8">
-              <h3 className="text-2xl font-bold">Update Meal</h3>
+              <h3 className="text-2xl font-bold">Update {newMeal.type}</h3>
               <button onClick={() => setShowAddModal(false)} className="bg-gray-100 p-2 rounded-full"><X size={20} /></button>
             </div>
             <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-500 ml-1">MEAL TYPE</label>
-                <select 
-                  value={newMeal.type}
-                  onChange={(e) => setNewMeal({...newMeal, type: e.target.value})}
-                  className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-0 focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
-                >
-                  <option value="breakfast">Breakfast</option>
-                  <option value="lunch">Lunch</option>
-                  <option value="dinner">Dinner</option>
-                  <option value="special">Special Item</option>
-                </select>
-              </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold text-gray-500 ml-1">MEAL ITEMS</label>
                 <textarea 
@@ -409,10 +430,41 @@ const Planner = () => {
                 />
               </div>
               <button 
-                onClick={handleAddMeal}
+                onClick={handleUpdateMeal}
                 className="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold text-lg shadow-xl shadow-blue-200 active:scale-95 transition-transform"
               >
-                Save Meal Plan
+                Update for {selectedDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSettingsModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50">
+          <div className="bg-white rounded-t-[40px] w-full max-w-md p-8 animate-in slide-in-from-bottom duration-300 max-h-[80vh] overflow-y-auto">
+            <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-8"></div>
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-2xl font-bold">Planner Settings</h3>
+              <button onClick={() => setShowSettingsModal(false)} className="bg-gray-100 p-2 rounded-full"><X size={20} /></button>
+            </div>
+            <div className="space-y-6">
+              <p className="text-sm text-gray-500 font-medium">Set default meals for all days unless modified specifically.</p>
+              {Object.entries(defaultPlan).map(([type, items]) => (
+                <div key={type} className="space-y-2">
+                  <label className="text-sm font-bold text-gray-500 ml-1 uppercase">{type}</label>
+                  <textarea 
+                    value={items}
+                    onChange={(e) => handleUpdateDefault(type, e.target.value)}
+                    className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-0 focus:ring-2 focus:ring-blue-500 outline-none min-h-[80px]"
+                  />
+                </div>
+              ))}
+              <button 
+                onClick={() => setShowSettingsModal(false)}
+                className="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold text-lg shadow-xl shadow-blue-200 active:scale-95 transition-transform"
+              >
+                Save Default Menu
               </button>
             </div>
           </div>
