@@ -296,6 +296,8 @@ const Planner = () => {
     lunch: 'Dal Tadka, Mix Veg, 4 Roti, Rice, Salad',
     dinner: 'Paneer Butter Masala, 3 Paratha, Rice'
   });
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newMeal, setNewMeal] = useState({ type: 'breakfast', items: '' });
 
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const next7Days = Array.from({ length: 7 }, (_, i) => {
@@ -303,6 +305,17 @@ const Planner = () => {
     d.setDate(d.getDate() + i);
     return d;
   });
+
+  const handleAddMeal = () => {
+    if (newMeal.items.trim()) {
+      setMenuPlan(prev => ({
+        ...prev,
+        [newMeal.type]: newMeal.items
+      }));
+      setShowAddModal(false);
+      setNewMeal({ type: 'breakfast', items: '' });
+    }
+  };
 
   return (
     <div className="p-4 pb-24">
@@ -339,7 +352,15 @@ const Planner = () => {
                 <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">{meal}</h4>
                 <p className="font-bold text-gray-900 mt-1">{items}</p>
               </div>
-              <button className="p-2 bg-gray-50 rounded-xl text-gray-400"><Edit2 size={16} /></button>
+              <button 
+                onClick={() => {
+                  setNewMeal({ type: meal, items: items });
+                  setShowAddModal(true);
+                }}
+                className="p-2 bg-gray-50 rounded-xl text-gray-400"
+              >
+                <Edit2 size={16} />
+              </button>
             </div>
             <div className="flex gap-2">
               <span className="px-2 py-1 bg-gray-50 text-gray-500 rounded-lg text-[10px] font-bold">142 Orders</span>
@@ -348,10 +369,55 @@ const Planner = () => {
           </div>
         ))}
 
-        <button className="w-full py-5 border-2 border-dashed border-gray-200 rounded-[32px] text-gray-400 font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+        <button 
+          onClick={() => setShowAddModal(true)}
+          className="w-full py-5 border-2 border-dashed border-gray-200 rounded-[32px] text-gray-400 font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform"
+        >
           <Plus size={20} /> Add Special Item
         </button>
       </div>
+
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50">
+          <div className="bg-white rounded-t-[40px] w-full max-w-md p-8 animate-in slide-in-from-bottom duration-300">
+            <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-8"></div>
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-2xl font-bold">Update Meal</h3>
+              <button onClick={() => setShowAddModal(false)} className="bg-gray-100 p-2 rounded-full"><X size={20} /></button>
+            </div>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-500 ml-1">MEAL TYPE</label>
+                <select 
+                  value={newMeal.type}
+                  onChange={(e) => setNewMeal({...newMeal, type: e.target.value})}
+                  className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-0 focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
+                >
+                  <option value="breakfast">Breakfast</option>
+                  <option value="lunch">Lunch</option>
+                  <option value="dinner">Dinner</option>
+                  <option value="special">Special Item</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-500 ml-1">MEAL ITEMS</label>
+                <textarea 
+                  value={newMeal.items}
+                  onChange={(e) => setNewMeal({...newMeal, items: e.target.value})}
+                  className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-0 focus:ring-2 focus:ring-blue-500 outline-none min-h-[100px]"
+                  placeholder="e.g. Dal Tadka, Rice, 4 Roti"
+                />
+              </div>
+              <button 
+                onClick={handleAddMeal}
+                className="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold text-lg shadow-xl shadow-blue-200 active:scale-95 transition-transform"
+              >
+                Save Meal Plan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
