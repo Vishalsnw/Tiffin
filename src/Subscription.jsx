@@ -10,8 +10,17 @@ const Subscription = ({ user, onSubscriptionComplete }) => {
     setError('');
 
     try {
-      // In a real app, you'd call your backend to create an order
-      // For this demo/fast-mode, we'll use the Razorpay Checkout directly with the key
+      // Log for debugging
+      console.log('Initializing Razorpay with Key:', import.meta.env.VITE_RAZORPAY_KEY_ID);
+      
+      if (!window.Razorpay) {
+        throw new Error('Razorpay SDK not loaded');
+      }
+
+      if (!import.meta.env.VITE_RAZORPAY_KEY_ID) {
+        throw new Error('Razorpay Key ID missing');
+      }
+
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: 19900, // Amount in paise (199 INR)
