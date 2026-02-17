@@ -288,6 +288,74 @@ const Customers = () => {
   );
 };
 
+// --- Planner Component ---
+const Planner = () => {
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [menuPlan, setMenuPlan] = useState({
+    breakfast: 'Poha & Jalebi',
+    lunch: 'Dal Tadka, Mix Veg, 4 Roti, Rice, Salad',
+    dinner: 'Paneer Butter Masala, 3 Paratha, Rice'
+  });
+
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const next7Days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+
+  return (
+    <div className="p-4 pb-24">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Meal Planner</h2>
+        <button className="bg-blue-600 text-white p-3 rounded-2xl shadow-lg shadow-blue-200">
+          <Settings size={24} />
+        </button>
+      </div>
+
+      <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar">
+        {next7Days.map((date, i) => (
+          <button
+            key={i}
+            onClick={() => setSelectedDate(date)}
+            className={`flex flex-col items-center min-w-[64px] p-4 rounded-3xl transition-all ${
+              selectedDate.toDateString() === date.toDateString()
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 scale-105'
+              : 'bg-white text-gray-400 border border-gray-50'
+            }`}
+          >
+            <span className="text-[10px] font-bold uppercase mb-1">{days[date.getDay()]}</span>
+            <span className="text-lg font-black">{date.getDate()}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-4 mt-4">
+        {Object.entries(menuPlan).map(([meal, items], i) => (
+          <div key={meal} className="bg-white p-5 rounded-[32px] shadow-sm border border-gray-50 relative overflow-hidden">
+            <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${i === 0 ? 'bg-orange-400' : i === 1 ? 'bg-green-500' : 'bg-blue-500'}`}></div>
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">{meal}</h4>
+                <p className="font-bold text-gray-900 mt-1">{items}</p>
+              </div>
+              <button className="p-2 bg-gray-50 rounded-xl text-gray-400"><Edit2 size={16} /></button>
+            </div>
+            <div className="flex gap-2">
+              <span className="px-2 py-1 bg-gray-50 text-gray-500 rounded-lg text-[10px] font-bold">142 Orders</span>
+              <span className="px-2 py-1 bg-gray-50 text-gray-500 rounded-lg text-[10px] font-bold">Preparation: 2h</span>
+            </div>
+          </div>
+        ))}
+
+        <button className="w-full py-5 border-2 border-dashed border-gray-200 rounded-[32px] text-gray-400 font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+          <Plus size={20} /> Add Special Item
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // --- Main App Component ---
 export default function App() {
   const [user, setUser] = useState(null);
@@ -330,7 +398,8 @@ export default function App() {
       <main className="flex-1 overflow-y-auto">
         {activeTab === 'Dashboard' && <Dashboard user={user} />}
         {activeTab === 'Customers' && <Customers />}
-        {!['Dashboard', 'Customers'].includes(activeTab) && (
+        {activeTab === 'Planner' && <Planner />}
+        {!['Dashboard', 'Customers', 'Planner'].includes(activeTab) && (
           <div className="h-full flex flex-col items-center justify-center p-8 text-center mt-20">
             <div className="w-20 h-20 bg-blue-50 text-blue-500 rounded-3xl flex items-center justify-center mb-6">
               <CalendarDays size={40} />
