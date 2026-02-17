@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { auth, googleProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { LayoutDashboard, Users, CalendarDays, Wallet, Truck, BarChart3, LogOut, Menu, Moon, Sun, Plus, Search, Filter, Edit2, Trash2, X, Check, Bell, Settings, ChevronRight, Phone } from 'lucide-react';
+import Subscription from './Subscription';
 
 const Auth = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -480,6 +481,9 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(() => {
+    return localStorage.getItem('isSubscribed') === 'true';
+  });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -488,6 +492,12 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  const handleSubscriptionComplete = () => {
+    setIsSubscribed(true);
+    localStorage.setItem('isSubscribed', 'true');
+    setActiveTab('Dashboard');
+  };
 
   if (loading) {
     return (
@@ -499,6 +509,10 @@ export default function App() {
 
   if (!user) {
     return <Auth />;
+  }
+
+  if (!isSubscribed) {
+    return <Subscription user={user} onSubscriptionComplete={handleSubscriptionComplete} />;
   }
 
   const menuItems = [
