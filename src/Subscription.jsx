@@ -14,15 +14,18 @@ const Subscription = ({ user, onSubscriptionComplete }) => {
       console.log('Initializing Razorpay with Key:', import.meta.env.VITE_RAZORPAY_KEY_ID);
       
       if (!window.Razorpay) {
-        throw new Error('Razorpay SDK not loaded');
+        console.error('Razorpay SDK not found on window object');
+        throw new Error('Razorpay SDK not loaded. Please check your internet connection or if an ad-blocker is blocking the script.');
       }
 
-      if (!import.meta.env.VITE_RAZORPAY_KEY_ID) {
-        throw new Error('Razorpay Key ID missing');
+      const keyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
+      if (!keyId || keyId === 'undefined') {
+        console.error('Razorpay Key ID is missing or undefined in environment variables');
+        throw new Error('Payment configuration error: Razorpay Key ID is missing.');
       }
 
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        key: keyId,
         amount: 19900, // Amount in paise (199 INR)
         currency: 'INR',
         name: 'TiffinFlow Pro',
