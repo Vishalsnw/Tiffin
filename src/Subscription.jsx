@@ -15,13 +15,15 @@ const Subscription = ({ user, onSubscriptionComplete }) => {
       
       if (!window.Razorpay) {
         console.error('Razorpay SDK not found on window object');
-        throw new Error('Razorpay SDK not loaded. Please check your internet connection or if an ad-blocker is blocking the script.');
+        setError('Razorpay SDK not loaded. Please check your internet connection or if an ad-blocker is blocking the script.');
+        return;
       }
 
       const keyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
       if (!keyId || keyId === 'undefined' || keyId.includes('YOUR_')) {
         console.error('Razorpay Key ID is missing or invalid:', keyId);
-        throw new Error('Payment configuration error: Invalid Razorpay Key ID.');
+        setError('Payment configuration error: Invalid Razorpay Key ID.');
+        return;
       }
 
       const options = {
@@ -55,8 +57,8 @@ const Subscription = ({ user, onSubscriptionComplete }) => {
       });
       rzp.open();
     } catch (err) {
-      setError('Could not initialize payment. Please try again.');
-      console.error(err);
+      console.error('Razorpay Initialization Error:', err);
+      setError(err.message || 'Could not initialize payment. Please try again.');
     } finally {
       setLoading(false);
     }
