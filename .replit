@@ -42,5 +42,5 @@ publicDir = "dist"
 [userenv]
 
 [userenv.shared]
-VITE_RAZORPAY_KEY_ID = "rzp_live_2lnzUjpgnONSYY"
-VITE_RAZORPAY_KEY_SECRET = "Ld8NjTqjtZEKOKh45HOEAEgA"
+VITE_RAZORPAY_KEY_ID = "Ld8NjTqjtZEKOKh45HOEAEgA"
+VITE_RAZORPAY_KEY_SECRET = "rzp_live_2lnzUjpgnONSYY"
