@@ -33,6 +33,10 @@ waitForPort = 5000
 localPort = 5000
 externalPort = 80
 
+[[ports]]
+localPort = 5001
+externalPort = 3001
+
 [deployment]
 deploymentTarget = "static"
 run = ["npm", "run", "preview"]
@@ -43,3 +47,4 @@ publicDir = "dist"
 
 [userenv.shared]
 VITE_RAZORPAY_KEY_ID = "rzp_live_2lnzUjpgnONSYY"
+VITE_RAZORPAY_KEY_SECRET = "Ld8NjTqjtZEKOKh45HOEAEgA"

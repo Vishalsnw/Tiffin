@@ -19,9 +19,9 @@ const Subscription = ({ user, onSubscriptionComplete }) => {
       }
 
       const keyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
-      if (!keyId || keyId === 'undefined') {
-        console.error('Razorpay Key ID is missing or undefined in environment variables');
-        throw new Error('Payment configuration error: Razorpay Key ID is missing.');
+      if (!keyId || keyId === 'undefined' || keyId.includes('YOUR_')) {
+        console.error('Razorpay Key ID is missing or invalid:', keyId);
+        throw new Error('Payment configuration error: Invalid Razorpay Key ID.');
       }
 
       const options = {
