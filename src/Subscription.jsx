@@ -20,9 +20,11 @@ const Subscription = ({ user, onSubscriptionComplete }) => {
       }
 
       const keyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
+      console.log('Using Key ID:', keyId);
       if (!keyId || keyId === 'undefined' || keyId.includes('YOUR_')) {
         console.error('Razorpay Key ID is missing or invalid:', keyId);
-        setError('Payment configuration error: Invalid Razorpay Key ID.');
+        setError('Payment configuration error: Invalid Razorpay Key ID. Please ensure VITE_RAZORPAY_KEY_ID is set in Secrets.');
+        setLoading(false);
         return;
       }
 
