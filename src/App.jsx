@@ -537,33 +537,24 @@ export default function App() {
         {activeTab === 'Dashboard' && <Dashboard user={user} />}
         {activeTab === 'Customers' && <Customers />}
         {activeTab === 'Planner' && <Planner />}
-        {!['Dashboard', 'Customers', 'Planner'].includes(activeTab) && (
-          <div className="h-full flex flex-col items-center justify-center p-8 text-center mt-20">
-            <div className="w-20 h-20 bg-blue-50 text-blue-500 rounded-3xl flex items-center justify-center mb-6">
-              <CalendarDays size={40} />
-            </div>
-            <h3 className="text-2xl font-bold mb-2">{activeTab}</h3>
-            <p className="text-gray-500">Feature currently under development. Stay tuned!</p>
-          </div>
-        )}
+        {activeTab === 'Payments' && <div className="p-8 text-center text-gray-400">Payments module coming soon...</div>}
+        {activeTab === 'Delivery' && <div className="p-8 text-center text-gray-400">Delivery tracking coming soon...</div>}
       </main>
 
-      {/* Android Style Bottom Navigation */}
-      <nav className={`fixed bottom-0 left-0 right-0 h-20 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t px-4 flex items-center justify-around z-40 pb-2 shadow-lg`}>
+      {/* Bottom Navigation */}
+      <nav className={`fixed bottom-0 left-0 right-0 h-20 border-t flex items-center justify-around px-2 z-40 ${isDarkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
         {menuItems.map((item) => (
-          <button 
+          <button
             key={item.label}
             onClick={() => setActiveTab(item.label)}
-            className={`flex flex-col items-center justify-center gap-1 min-w-[64px] transition-all duration-300 ${
+            className={`flex flex-col items-center justify-center w-16 h-16 rounded-2xl transition-all duration-300 ${
               activeTab === item.label 
-              ? 'text-blue-600 scale-110' 
-              : 'text-gray-400'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 -translate-y-2' 
+              : 'text-gray-400 hover:text-gray-600'
             }`}
           >
-            <div className={`p-1.5 rounded-xl transition-colors ${activeTab === item.label ? 'bg-blue-50' : ''}`}>
-              <item.icon size={24} strokeWidth={activeTab === item.label ? 2.5 : 2} />
-            </div>
-            <span className={`text-[10px] font-bold uppercase tracking-wider ${activeTab === item.label ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
+            <item.icon size={22} strokeWidth={activeTab === item.label ? 2.5 : 2} />
+            <span className={`text-[9px] font-bold mt-1 transition-all duration-300 ${activeTab === item.label ? 'opacity-100' : 'opacity-0 h-0'}`}>
               {item.label}
             </span>
           </button>
