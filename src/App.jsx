@@ -3,6 +3,7 @@ import { auth, googleProvider, signInWithPopup, RecaptchaVerifier, signInWithPho
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { LayoutDashboard, Users, CalendarDays, Wallet, Truck, BarChart3, LogOut, Menu, Moon, Sun, Plus, Search, Filter, Edit2, Trash2, X, Check, Bell, Settings, ChevronRight, Phone } from 'lucide-react';
 import Subscription from './Subscription';
+import PrivacyPolicy from './PrivacyPolicy';
 
 const Auth = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -515,12 +516,17 @@ export default function App() {
     return <Subscription user={user} onSubscriptionComplete={handleSubscriptionComplete} />;
   }
 
+  if (activeTab === 'Privacy') {
+    return <PrivacyPolicy onBack={() => setActiveTab('Dashboard')} />;
+  }
+
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard' },
     { icon: Users, label: 'Customers' },
     { icon: CalendarDays, label: 'Planner' },
     { icon: Wallet, label: 'Payments' },
     { icon: Truck, label: 'Delivery' },
+    { icon: Settings, label: 'Privacy' },
   ];
 
   return (
