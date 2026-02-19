@@ -18,6 +18,18 @@ const PrivacyPolicy = ({ onBack }) => {
           <p className="text-gray-400 text-sm mb-8">Last Updated: February 18, 2026</p>
 
           <div className="space-y-8 text-gray-600">
+            <div className="bg-orange-50 p-6 rounded-[32px] border border-orange-100 mb-8">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-sm font-bold text-orange-900 uppercase tracking-wider mb-1">Account Status</h2>
+                  <p className="text-2xl font-black text-orange-600">Free Trial</p>
+                </div>
+                <div className="bg-orange-600 text-white px-4 py-2 rounded-2xl text-xs font-bold uppercase shadow-lg shadow-orange-200">
+                  Active
+                </div>
+              </div>
+            </div>
+
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">1. Introduction</h2>
               <p>Welcome to TiffinFlow Pro (https://tiffin-seven.vercel.app/). We are committed to protecting your personal information and your right to privacy. If you have any questions or concerns about our policy, or our practices with regards to your personal information, please contact us at vishalsnw007@gmail.com.</p>
