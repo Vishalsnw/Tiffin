@@ -26,28 +26,6 @@ const LoginPage = () => (
 
 // --- Dashboard Component ---
 const Dashboard = ({ user }) => {
-  const handlePayment = () => {
-    const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-      amount: 50000,
-      currency: "INR",
-      name: "TiffinFlow Pro",
-      description: "Monthly Subscription",
-      handler: function (response) {
-        alert("Payment Successful: " + response.razorpay_payment_id);
-      },
-      prefill: {
-        name: user?.displayName,
-        email: user?.email,
-      },
-      theme: {
-        color: "#ea580c",
-      },
-    };
-    const rzp = new window.Razorpay(options);
-    rzp.open();
-  };
-
   return (
     <div className="p-4 pb-24">
       <div className="flex justify-between items-center mb-6">
@@ -68,7 +46,7 @@ const Dashboard = ({ user }) => {
           { label: 'Pending', value: '₹12.4k', color: 'bg-purple-500' },
           { label: 'Monthly', value: '₹84.2k', color: 'bg-green-500' },
         ].map((stat, i) => (
-          <div key={i} className="bg-white p-4 rounded-3xl shadow-sm border border-gray-50 flex flex-col justify-between aspect-square">
+          <div key={i} className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between aspect-square">
             <div className={`w-10 h-10 ${stat.color} rounded-2xl mb-2 flex items-center justify-center text-white`}>
               {i === 0 && <Users size={20} />}
               {i === 1 && <Truck size={20} />}
@@ -83,15 +61,8 @@ const Dashboard = ({ user }) => {
         ))}
       </div>
 
-      <button 
-        onClick={handlePayment}
-        className="w-full bg-orange-600 text-white font-bold py-4 rounded-2xl mb-6 shadow-lg shadow-orange-200 active:scale-[0.98] transition-all"
-      >
-        Renew Subscription (Test)
-      </button>
-
       <div className="space-y-4">
-        <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-50">
+        <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-bold text-gray-900">Meal Distribution</h3>
             <ChevronRight size={20} className="text-gray-400" />
@@ -124,6 +95,13 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  const [showSubscription, setShowSubscription] = useState(false);
+
+  const handleSubscriptionComplete = () => {
+    setShowSubscription(false);
+    alert("Subscription activated!");
+  };
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-600"></div>
@@ -132,23 +110,32 @@ export default function App() {
 
   if (!user) return <LoginPage />;
 
+  if (showSubscription) return <Subscription user={user} onSubscriptionComplete={handleSubscriptionComplete} />;
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
-      <div className="max-w-md mx-auto bg-white min-h-screen shadow-2xl relative">
+      <div className="max-w-md mx-auto bg-white min-h-screen shadow-2xl relative pb-20">
         {activeTab === 'Dashboard' && <Dashboard user={user} />}
         {activeTab === 'Privacy' && <PrivacyPolicy onBack={() => setActiveTab('Dashboard')} />}
 
-        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/80 backdrop-blur-xl border-t border-gray-100 px-6 py-4 flex justify-between items-center z-40">
+        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/90 backdrop-blur-xl border-t border-gray-100 px-6 py-4 flex justify-around items-center z-50">
           {[
             { icon: LayoutDashboard, label: 'Dashboard' },
-            { icon: Settings, label: 'Privacy' },
+            { icon: Users, label: 'Customers' },
+            { icon: CalendarDays, label: 'Menu' },
+            { icon: Wallet, label: 'Payments' },
+            { icon: Settings, label: 'Settings' },
           ].map((item) => (
             <button
               key={item.label}
-              onClick={() => setActiveTab(item.label)}
-              className={`flex flex-col items-center gap-1 transition-all ${activeTab === item.label ? 'text-blue-600 scale-110' : 'text-gray-400'}`}
+              onClick={() => {
+                if (item.label === 'Dashboard') setActiveTab('Dashboard');
+                else if (item.label === 'Settings') setActiveTab('Privacy');
+                else setShowSubscription(true);
+              }}
+              className={`flex flex-col items-center gap-1 transition-all ${((activeTab === 'Dashboard' && item.label === 'Dashboard') || (activeTab === 'Privacy' && item.label === 'Settings')) ? 'text-orange-600 scale-110' : 'text-gray-400'}`}
             >
-              <item.icon size={activeTab === item.label ? 24 : 20} strokeWidth={activeTab === item.label ? 2.5 : 2} />
+              <item.icon size={20} strokeWidth={2.5} />
               <span className="text-[10px] font-bold uppercase tracking-tighter">{item.label}</span>
             </button>
           ))}
