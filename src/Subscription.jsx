@@ -77,8 +77,16 @@ const Subscription = ({ user, onSubscriptionComplete }) => {
           <div className="w-20 h-20 bg-blue-100 rounded-3xl mx-auto mb-6 flex items-center justify-center text-blue-600">
             <CreditCard size={40} />
           </div>
-          <h2 className="text-3xl font-black text-gray-900 mb-2">Upgrade to Pro</h2>
-          <p className="text-gray-500 font-medium">Start your 15-day free trial today</p>
+          <h2 className="text-3xl font-black text-gray-900 mb-2">
+            {new Date().getTime() - new Date(user?.metadata?.creationTime || Date.now()).getTime() > 15 * 24 * 60 * 60 * 1000 
+              ? 'Trial Expired' 
+              : 'Upgrade to Pro'}
+          </h2>
+          <p className="text-gray-500 font-medium">
+            {new Date().getTime() - new Date(user?.metadata?.creationTime || Date.now()).getTime() > 15 * 24 * 60 * 60 * 1000 
+              ? 'You need to pay to continue using TiffinFlow Pro' 
+              : 'Start your 15-day free trial today'}
+          </p>
         </div>
 
         <div className="bg-blue-50 rounded-3xl p-6 mb-8 border border-blue-100">
@@ -119,7 +127,7 @@ const Subscription = ({ user, onSubscriptionComplete }) => {
           className="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold text-lg shadow-xl shadow-blue-200 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
         >
           {loading ? <Loader2 className="animate-spin" /> : null}
-          {loading ? 'Processing...' : 'Start 15-Day Free Trial'}
+          {loading ? 'Processing...' : (new Date().getTime() - new Date(user?.metadata?.creationTime || Date.now()).getTime() > 15 * 24 * 60 * 60 * 1000 ? 'Pay Now' : 'Start 15-Day Free Trial')}
         </button>
         
         <p className="text-center text-xs text-gray-400 mt-6 font-medium">

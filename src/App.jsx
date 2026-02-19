@@ -96,6 +96,19 @@ export default function App() {
   }, []);
 
   const [showSubscription, setShowSubscription] = useState(false);
+  const [trialExpired, setTrialExpired] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      const creationTime = new Date(user.metadata.creationTime).getTime();
+      const currentTime = new Date().getTime();
+      const diffDays = Math.floor((currentTime - creationTime) / (1000 * 60 * 60 * 24));
+      if (diffDays >= 15) {
+        setTrialExpired(true);
+        setShowSubscription(true);
+      }
+    }
+  }, [user]);
 
   const handleSubscriptionComplete = () => {
     setShowSubscription(false);
