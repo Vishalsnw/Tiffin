@@ -283,11 +283,59 @@ const SettingsScreen = ({ user, onLogout }) => {
   );
 };
 
+// --- Add Customer Modal ---
+const AddCustomerModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-8 duration-300">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-black text-gray-900">Add Customer</h2>
+          <RippleButton onClick={onClose} className="p-2 bg-gray-100 rounded-full text-gray-500">
+            <X size={20} />
+          </RippleButton>
+        </div>
+        
+        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onClose(); }}>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Full Name</label>
+            <input type="text" placeholder="e.g. Rahul Sharma" className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 font-bold text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-orange-600 transition-all" required />
+          </div>
+          
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Phone Number</label>
+            <input type="tel" placeholder="+91 00000 00000" className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 font-bold text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-orange-600 transition-all" required />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Meal Type</label>
+              <select className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 font-bold text-gray-900 focus:ring-2 focus:ring-orange-600 appearance-none">
+                <option>Veg</option>
+                <option>Non-Veg</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Daily Price</label>
+              <input type="number" placeholder="₹" className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 font-bold text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-orange-600 transition-all" required />
+            </div>
+          </div>
+
+          <RippleButton type="submit" className="w-full bg-orange-600 text-white font-black py-5 rounded-2xl mt-6 shadow-lg shadow-orange-600/30 active:scale-95 transition-all">
+            Save Customer
+          </RippleButton>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 // --- Main App Component ---
 export default function App() {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -351,13 +399,17 @@ export default function App() {
 
         {/* Floating Action Button - Only on relevant screens */}
         {(activeTab === 'Dashboard' || activeTab === 'Customers') && (
-          <RippleButton 
-            className="fixed bottom-24 right-6 w-16 h-16 bg-orange-600 text-white rounded-full shadow-[0_8px_30px_rgb(234,88,12,0.4)] flex items-center justify-center z-[60] active:scale-90 transition-transform"
-            onClick={() => alert("Add Customer modal coming soon!")}
-          >
-            <Plus size={32} strokeWidth={3} />
-          </RippleButton>
+          <div className="fixed bottom-28 right-6 z-[60] pointer-events-none">
+            <RippleButton 
+              className="w-14 h-14 bg-orange-600 text-white rounded-2xl shadow-[0_12px_40px_rgba(234,88,12,0.4)] flex items-center justify-center pointer-events-auto active:scale-90 transition-all hover:scale-105"
+              onClick={() => setIsModalOpen(true)}
+            >
+              <Plus size={28} strokeWidth={3} />
+            </RippleButton>
+          </div>
         )}
+
+        <AddCustomerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
         {/* Bottom Navigation */}
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/90 backdrop-blur-3xl border-t border-gray-100 px-2 pt-2 pb-[calc(env(safe-area-inset-bottom,16px)+8px)] flex justify-around items-center z-50">
