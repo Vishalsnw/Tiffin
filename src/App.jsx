@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, Users, CalendarDays, Wallet, Truck, BarChart3, LogOut, Menu, Moon, Sun, Plus, Search, Filter, Edit2, Trash2, X, Check, Bell, Settings, ChevronRight, Phone, LogIn, IndianRupee } from 'lucide-react';
 import Subscription from './Subscription';
 import PrivacyPolicy from './PrivacyPolicy';
-import { auth, loginWithGoogle, logout } from './firebase';
+import { auth, loginWithGoogle, logout, db, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
 // --- Ripple Effect Component ---
-const RippleButton = ({ children, onClick, className = "" }) => {
+const RippleButton = ({ children, onClick, className = "", type = "button" }) => {
   const [ripples, setRipples] = useState([]);
 
   const createRipple = (event) => {
@@ -26,6 +26,7 @@ const RippleButton = ({ children, onClick, className = "" }) => {
 
   return (
     <button
+      type={type}
       onClick={(e) => {
         createRipple(e);
         onClick && onClick(e);
@@ -69,7 +70,11 @@ const LoginPage = () => (
 );
 
 // --- Dashboard Component ---
-const Dashboard = ({ user }) => {
+const Dashboard = ({ user, customers }) => {
+  const totalMeals = customers.length;
+  const vegCount = customers.filter(c => c.type === 'Veg').length;
+  const nonVegCount = customers.filter(c => c.type === 'Non-Veg').length;
+
   return (
     <div className="p-4 pt-6 pb-24">
       <div className="flex justify-between items-center mb-8 px-2">
@@ -84,8 +89,8 @@ const Dashboard = ({ user }) => {
 
       <div className="grid grid-cols-1 gap-4 mb-8">
         {[
-          { label: 'Total Meals Today', value: '156', sub: '67 Pending Delivery', color: 'bg-orange-600', icon: Truck },
-          { label: 'Pending Payments', value: '₹12,450', sub: '14 Customers Overdue', color: 'bg-red-600', icon: Wallet },
+          { label: 'Total Meals Today', value: totalMeals, sub: 'All set for today', color: 'bg-orange-600', icon: Truck },
+          { label: 'Pending Payments', value: '₹0', sub: 'No overdue payments', color: 'bg-red-600', icon: Wallet },
         ].map((stat, i) => (
           <div key={i} className={`${stat.color} p-6 rounded-[2.5rem] shadow-lg text-white flex justify-between items-center relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer`}>
             <div className="relative z-10">
@@ -100,10 +105,10 @@ const Dashboard = ({ user }) => {
 
       <div className="grid grid-cols-2 gap-4 mb-8">
         {[
-          { label: 'Veg Today', value: '98', color: 'bg-green-100 text-green-700' },
-          { label: 'Non-Veg Today', value: '58', color: 'bg-rose-100 text-rose-700' },
-          { label: 'Expiring Soon', value: '8', color: 'bg-amber-100 text-amber-700' },
-          { label: 'Today\'s Deliveries', value: '156', color: 'bg-blue-100 text-blue-700' },
+          { label: 'Veg Today', value: vegCount, color: 'bg-green-100 text-green-700' },
+          { label: 'Non-Veg Today', value: nonVegCount, color: 'bg-rose-100 text-rose-700' },
+          { label: 'Expiring Soon', value: '0', color: 'bg-amber-100 text-amber-700' },
+          { label: 'Today\'s Deliveries', value: totalMeals, color: 'bg-blue-100 text-blue-700' },
         ].map((stat, i) => (
           <div key={i} className={`${stat.color.split(' ')[0]} p-5 rounded-[2rem] flex flex-col justify-between aspect-[1.1/1] active:scale-95 transition-transform cursor-pointer`}>
             <p className="text-sm font-bold opacity-70 uppercase tracking-tight leading-none mb-2">{stat.label}</p>
@@ -116,80 +121,71 @@ const Dashboard = ({ user }) => {
 };
 
 // --- Customer List Screen ---
-const CustomersScreen = () => {
-  const customers = [
-    { name: 'Rahul Sharma', type: 'Veg', status: 'Active', balance: '₹450' },
-    { name: 'Priya Patel', type: 'Non-Veg', status: 'Overdue', balance: '₹1,200' },
-    { name: 'Amit Verma', type: 'Veg', status: 'Active', balance: '₹0' },
-    { name: 'Suresh Raina', type: 'Veg', status: 'Active', balance: '₹0' },
-    { name: 'Mithali Raj', type: 'Non-Veg', status: 'Active', balance: '₹300' },
-  ];
-
+const CustomersScreen = ({ customers }) => {
   return (
     <div className="p-4 pt-6 pb-24">
       <h2 className="text-3xl font-black mb-6 px-2">Customers</h2>
       <div className="space-y-4">
-        {customers.map((c, i) => (
-          <RippleButton key={i} className="w-full bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between text-left active:scale-[0.98] transition-transform">
-            <div className="flex items-center gap-4">
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black ${c.type === 'Veg' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                {c.name[0]}
-              </div>
-              <div>
-                <p className="font-bold text-gray-900 text-lg leading-tight mb-1">{c.name}</p>
-                <div className="flex items-center gap-2">
-                  <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${c.type === 'Veg' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
-                    {c.type}
-                  </span>
-                  <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${c.status === 'Overdue' ? 'bg-red-600 text-white shadow-sm' : 'bg-gray-100 text-gray-500'}`}>
-                    {c.status}
-                  </span>
+        {customers.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 opacity-40">
+            <Users size={64} strokeWidth={1} />
+            <p className="font-bold mt-4 uppercase tracking-widest text-xs">No customers yet</p>
+          </div>
+        ) : (
+          customers.map((c, i) => (
+            <RippleButton key={i} className="w-full bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between text-left active:scale-[0.98] transition-transform">
+              <div className="flex items-center gap-4">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black ${c.type === 'Veg' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                  {c.name[0]}
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900 text-lg leading-tight mb-1">{c.name}</p>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${c.type === 'Veg' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                      {c.type}
+                    </span>
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-gray-100 text-gray-500`}>
+                      Active
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="text-right">
-              <p className={`text-lg font-black ${c.status === 'Overdue' ? 'text-red-600' : 'text-gray-900'}`}>{c.balance}</p>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Balance</p>
-            </div>
-          </RippleButton>
-        ))}
+              <div className="text-right">
+                <p className={`text-lg font-black text-gray-900`}>₹{c.price || 0}</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Daily Price</p>
+              </div>
+            </RippleButton>
+          ))
+        )}
       </div>
     </div>
   );
 };
 
 // --- Today's Production Screen ---
-const TodayScreen = () => {
+const TodayScreen = ({ customers }) => {
   return (
     <div className="p-4 pt-6 pb-24">
       <div className="mb-8 px-2">
         <p className="text-gray-500 font-bold uppercase tracking-widest text-xs mb-1">Production View</p>
-        <h2 className="text-4xl font-black text-gray-900 leading-tight">Aaj 67 tiffin banana hai</h2>
+        <h2 className="text-4xl font-black text-gray-900 leading-tight">Aaj {customers.length} tiffin banana hai</h2>
       </div>
       
       <div className="space-y-3">
-        {[
-          { name: 'Suresh Raina', area: 'Andheri West', type: 'Veg', note: 'No onions' },
-          { name: 'Mithali Raj', area: 'Bandra', type: 'Non-Veg', note: 'Extra spicy' },
-          { name: 'Virat Kohli', area: 'Juhu', type: 'Veg', note: 'Jain food' },
-          { name: 'Hardik Pandya', area: 'Worli', type: 'Non-Veg', note: '' },
-          { name: 'KL Rahul', area: 'Parel', type: 'Veg', note: 'Less oil' },
-        ].map((item, i) => (
+        {customers.map((item, i) => (
           <div key={i} className="bg-white p-5 rounded-[2rem] flex items-center justify-between border border-gray-100 shadow-sm active:bg-orange-50 active:border-orange-100 transition-all">
             <div>
               <p className="font-bold text-gray-900 text-lg leading-none mb-1">{item.name}</p>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-tight">{item.area} • <span className={item.type === 'Veg' ? 'text-green-600' : 'text-red-600'}>{item.type}</span></p>
-              {item.note && (
-                <div className="flex items-center gap-1.5 mt-2 bg-orange-50 px-3 py-1.5 rounded-full w-fit border border-orange-100">
-                  <span className="text-[10px] font-black text-orange-600 uppercase italic">Note: {item.note}</span>
-                </div>
-              )}
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-tight">{item.phone} • <span className={item.type === 'Veg' ? 'text-green-600' : 'text-red-600'}>{item.type}</span></p>
             </div>
             <div className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-300">
               <ChevronRight size={20} />
             </div>
           </div>
         ))}
+        {customers.length === 0 && (
+          <p className="text-center py-20 text-gray-400 font-bold uppercase tracking-widest text-xs">No orders today</p>
+        )}
       </div>
     </div>
   );
@@ -201,30 +197,14 @@ const PaymentsScreen = () => {
     <div className="p-4 pt-6 pb-24">
       <h2 className="text-3xl font-black mb-6 px-2">Payments</h2>
       
-      <div className="bg-red-600 p-8 rounded-[2.5rem] shadow-xl text-white mb-8">
+      <div className="bg-gray-900 p-8 rounded-[2.5rem] shadow-xl text-white mb-8">
         <p className="text-sm font-bold opacity-80 uppercase tracking-widest mb-2">Total Pending</p>
-        <p className="text-5xl font-black">₹12,450</p>
+        <p className="text-5xl font-black">₹0</p>
       </div>
 
-      <div className="space-y-4">
-        {[
-          { name: 'Hardik Pandya', amount: '₹2,100', days: '12 days late' },
-          { name: 'KL Rahul', amount: '₹1,500', days: '8 days late' },
-        ].map((p, i) => (
-          <div key={i} className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <p className="font-bold text-gray-900 text-lg">{p.name}</p>
-                <p className="text-xs font-bold text-red-600 uppercase tracking-tighter">{p.days}</p>
-              </div>
-              <p className="text-xl font-black text-gray-900">{p.amount}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <RippleButton className="bg-green-600 text-white py-3 rounded-xl font-bold text-sm">Mark Paid</RippleButton>
-              <RippleButton className="bg-gray-100 text-gray-900 py-3 rounded-xl font-bold text-sm">Send Reminder</RippleButton>
-            </div>
-          </div>
-        ))}
+      <div className="flex flex-col items-center justify-center py-20 opacity-40">
+        <Wallet size={64} strokeWidth={1} />
+        <p className="font-bold mt-4 uppercase tracking-widest text-xs text-center">Sabka hisab clear hai!</p>
       </div>
     </div>
   );
@@ -242,26 +222,6 @@ const SettingsScreen = ({ user, onLogout }) => {
       </div>
 
       <div className="space-y-2">
-        <RippleButton className="w-full bg-gray-50 p-5 rounded-2xl flex items-center justify-between text-left group">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-white rounded-xl text-gray-600 group-active:text-orange-600 transition-colors">
-              <Users size={20} />
-            </div>
-            <span className="font-bold text-gray-900">Manage Subscription</span>
-          </div>
-          <ChevronRight size={20} className="text-gray-300" />
-        </RippleButton>
-
-        <RippleButton className="w-full bg-gray-50 p-5 rounded-2xl flex items-center justify-between text-left group">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-white rounded-xl text-gray-600 group-active:text-orange-600 transition-colors">
-              <Bell size={20} />
-            </div>
-            <span className="font-bold text-gray-900">Notifications</span>
-          </div>
-          <ChevronRight size={20} className="text-gray-300" />
-        </RippleButton>
-
         <RippleButton 
           onClick={onLogout}
           className="w-full bg-red-50 p-5 rounded-2xl flex items-center justify-between text-left group mt-8"
@@ -284,8 +244,31 @@ const SettingsScreen = ({ user, onLogout }) => {
 };
 
 // --- Add Customer Modal ---
-const AddCustomerModal = ({ isOpen, onClose }) => {
+const AddCustomerModal = ({ isOpen, onClose, user }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    type: 'Veg',
+    price: ''
+  });
+
   if (!isOpen) return null;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await addDoc(collection(db, `users/${user.uid}/customers`), {
+        ...formData,
+        createdAt: serverTimestamp(),
+      });
+      setFormData({ name: '', phone: '', type: 'Veg', price: '' });
+      onClose();
+    } catch (error) {
+      console.error("Error adding customer:", error);
+      alert("Failed to add customer. Please try again.");
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-8 duration-300">
@@ -296,28 +279,53 @@ const AddCustomerModal = ({ isOpen, onClose }) => {
           </RippleButton>
         </div>
         
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onClose(); }}>
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Full Name</label>
-            <input type="text" placeholder="e.g. Rahul Sharma" className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 font-bold text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-orange-600 transition-all" required />
+            <input 
+              type="text" 
+              placeholder="e.g. Rahul Sharma" 
+              className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 font-bold text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-orange-600 transition-all" 
+              required 
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+            />
           </div>
           
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Phone Number</label>
-            <input type="tel" placeholder="+91 00000 00000" className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 font-bold text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-orange-600 transition-all" required />
+            <input 
+              type="tel" 
+              placeholder="+91 00000 00000" 
+              className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 font-bold text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-orange-600 transition-all" 
+              required 
+              value={formData.phone}
+              onChange={(e) => setFormData({...formData, phone: e.target.value})}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3 pt-2">
             <div className="flex flex-col gap-2">
               <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Meal Type</label>
-              <select className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 font-bold text-gray-900 focus:ring-2 focus:ring-orange-600 appearance-none">
+              <select 
+                className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 font-bold text-gray-900 focus:ring-2 focus:ring-orange-600 appearance-none"
+                value={formData.type}
+                onChange={(e) => setFormData({...formData, type: e.target.value})}
+              >
                 <option>Veg</option>
                 <option>Non-Veg</option>
               </select>
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Daily Price</label>
-              <input type="number" placeholder="₹" className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 font-bold text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-orange-600 transition-all" required />
+              <input 
+                type="number" 
+                placeholder="₹" 
+                className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 font-bold text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-orange-600 transition-all" 
+                required 
+                value={formData.price}
+                onChange={(e) => setFormData({...formData, price: e.target.value})}
+              />
             </div>
           </div>
 
@@ -336,6 +344,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [customers, setCustomers] = useState([]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -345,16 +354,36 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  const [showSubscription, setShowSubscription] = useState(false);
-  const [trialExpired, setTrialExpired] = useState(false);
+  useEffect(() => {
+    if (!user) {
+      setCustomers([]);
+      return;
+    }
 
+    const q = query(
+      collection(db, `users/${user.uid}/customers`),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const customerData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setCustomers(customerData);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const [showSubscription, setShowSubscription] = useState(false);
+  
   useEffect(() => {
     if (user) {
       const creationTime = new Date(user.metadata.creationTime).getTime();
       const currentTime = new Date().getTime();
       const diffDays = Math.floor((currentTime - creationTime) / (1000 * 60 * 60 * 24));
       if (diffDays >= 15) {
-        setTrialExpired(true);
         setShowSubscription(true);
       }
     }
@@ -362,7 +391,6 @@ export default function App() {
 
   const handleSubscriptionComplete = () => {
     setShowSubscription(false);
-    alert("Subscription activated!");
   };
 
   if (loading) return (
@@ -379,12 +407,12 @@ export default function App() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'Dashboard': return <Dashboard user={user} />;
-      case 'Customers': return <CustomersScreen />;
-      case 'Today': return <TodayScreen />;
+      case 'Dashboard': return <Dashboard user={user} customers={customers} />;
+      case 'Customers': return <CustomersScreen customers={customers} />;
+      case 'Today': return <TodayScreen customers={customers} />;
       case 'Payments': return <PaymentsScreen />;
       case 'Settings': return <SettingsScreen user={user} onLogout={logout} />;
-      default: return <Dashboard user={user} />;
+      default: return <Dashboard user={user} customers={customers} />;
     }
   };
 
@@ -409,7 +437,7 @@ export default function App() {
           </div>
         )}
 
-        <AddCustomerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+        <AddCustomerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} user={user} />
 
         {/* Bottom Navigation */}
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/90 backdrop-blur-3xl border-t border-gray-100 px-2 pt-2 pb-[calc(env(safe-area-inset-bottom,16px)+8px)] flex justify-around items-center z-50">
