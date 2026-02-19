@@ -1,20 +1,29 @@
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getAuth, GoogleAuthProvider, RecaptchaVerifier, signInWithPhoneNumber, signInWithPopup } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAbHTfU_LEZRskt9tAXMRT9XRc8nQlDo9E",
-  authDomain: "tiffin-ff3cc.firebaseapp.com",
-  projectId: "tiffin-ff3cc",
-  storageBucket: "tiffin-ff3cc.firebasestorage.app",
-  messagingSenderId: "708196896667",
-  appId: "1:708196896667:web:8368ff437548aa19481b3e",
-  measurementId: "G-M8RGHCE7ZP"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAbHTfU_LEZRskt9tAXMRT9XRc8nQlDo9E",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "tiffin-ff3cc.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "tiffin-ff3cc",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "tiffin-ff3cc.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "708196896667",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:708196896667:web:8368ff437548aa19481b3e"
 };
 
 const app = initializeApp(firebaseConfig);
-const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
-export { app, analytics, auth, googleProvider, RecaptchaVerifier, signInWithPhoneNumber, signInWithPopup };
+export const loginWithGoogle = async () => {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    return result.user;
+  } catch (error) {
+    console.error("Auth Error:", error);
+    throw error;
+  }
+};
+
+export const logout = () => signOut(auth);
+
+export { app, auth };
