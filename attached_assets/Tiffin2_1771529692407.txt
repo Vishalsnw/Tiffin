@@ -1,0 +1,202 @@
+You are upgrading an existing SaaS web application called “TiffinFlow”.
+
+This web app will be converted into a WebView-based Android application.
+
+Your task is NOT to rebuild the app.
+Your task is to MODIFY and IMPROVE the existing app so that it feels like a native Android app, not a website.
+
+Do not overcomplicate.
+Focus on mobile-first Android-style experience.
+
+--------------------------------------------------
+GOAL
+--------------------------------------------------
+
+Make the UI feel like:
+
+- A modern Android business app
+- Clean
+- Touch-friendly
+- Fast
+- App-like
+- Not like a website
+
+--------------------------------------------------
+1️⃣ REMOVE WEBSITE FEEL
+--------------------------------------------------
+
+- Remove excessive margins
+- Remove large desktop paddings
+- Remove website-style centered layouts
+- Use full-width layout
+- Remove unnecessary header space
+
+Make layout edge-to-edge like Android apps.
+
+--------------------------------------------------
+2️⃣ USE BOTTOM NAVIGATION (Important)
+--------------------------------------------------
+
+Replace sidebar with Bottom Navigation Bar for mobile.
+
+Bottom tabs:
+
+- Dashboard
+- Customers
+- Today
+- Payments
+- Settings
+
+Requirements:
+
+- Fixed bottom navigation
+- Active icon highlight
+- Smooth tab switching
+- Android-style icons
+- No browser-style navigation
+
+--------------------------------------------------
+3️⃣ ANDROID-STYLE DASHBOARD
+--------------------------------------------------
+
+Redesign dashboard to feel like a mobile app home screen.
+
+Show big cards:
+
+- Total Meals Today
+- Veg Count
+- Non-Veg Count
+- Pending Payments
+- Expiring Soon
+
+Cards must:
+
+- Large numbers
+- Rounded corners
+- Soft elevation shadow
+- Compact spacing
+- Touch-friendly
+
+Remove heavy charts.
+Keep it simple and bold.
+
+--------------------------------------------------
+4️⃣ FLOATING ACTION BUTTON (FAB)
+--------------------------------------------------
+
+Add a Floating Action Button (bottom right corner):
+
+Primary action:
+“Add Customer”
+
+Android-style circular button.
+
+--------------------------------------------------
+5️⃣ CUSTOMER SCREEN (APP STYLE)
+--------------------------------------------------
+
+Use card-based layout, not tables.
+
+Each card shows:
+
+- Name
+- Veg type
+- Status badge
+- Balance
+
+Tap → Open full screen detail view.
+
+Use slide-in transitions.
+
+--------------------------------------------------
+6️⃣ TODAY SCREEN (PRODUCTION VIEW)
+--------------------------------------------------
+
+Top large text:
+
+“Aaj 67 tiffin banana hai”
+
+Simple scrollable list:
+
+- Customer name
+- Veg type
+- Area
+- Note
+
+No complex grid.
+Clean list style like delivery app.
+
+--------------------------------------------------
+7️⃣ PAYMENT SCREEN (SIMPLIFIED)
+--------------------------------------------------
+
+Show:
+
+- Total pending amount
+- List of customers with balance
+- “Mark Paid” button
+- “Send Reminder” button
+
+Highlight overdue customers in red.
+
+--------------------------------------------------
+8️⃣ REMOVE DESKTOP FEATURES
+--------------------------------------------------
+
+Remove:
+
+- Sidebar navigation
+- Multi-column desktop grids
+- Hover-only effects
+- Small clickable text links
+
+Everything must be touch-friendly.
+
+--------------------------------------------------
+9️⃣ ADD ANDROID-LIKE INTERACTIONS
+--------------------------------------------------
+
+Add:
+
+- Ripple effect on buttons
+- Smooth page transitions
+- Slide animation between tabs
+- Toast notifications
+- Confirmation bottom sheet instead of alert()
+
+--------------------------------------------------
+🔟 SAFE AREA & WEBVIEW OPTIMIZATION
+--------------------------------------------------
+
+Ensure:
+
+- No content hidden under status bar
+- Proper bottom padding above navigation
+- No horizontal scroll
+- No zoom required
+- Fast loading
+
+--------------------------------------------------
+1️⃣1️⃣ LOADING & EMPTY STATES
+--------------------------------------------------
+
+Add:
+
+- Skeleton loading placeholders
+- Clean empty state illustration
+- Clear CTA buttons
+
+--------------------------------------------------
+FINAL REQUIREMENT
+--------------------------------------------------
+
+After upgrade, the app must:
+
+- Feel like a native Android business app
+- Work smoothly inside WebView
+- Be fully mobile-first
+- Avoid website look completely
+- Be simple for Indian home-based tiffin providers
+
+Do not over-engineer.
+Keep it clean and app-like.
