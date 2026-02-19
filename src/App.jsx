@@ -257,15 +257,27 @@ const AddCustomerModal = ({ isOpen, onClose, user }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, `users/${user.uid}/customers`), {
-        ...formData,
+      if (!user) {
+        alert("Please login first");
+        return;
+      }
+      
+      const customerData = {
+        name: formData.name,
+        phone: formData.phone,
+        type: formData.type,
+        price: Number(formData.price),
         createdAt: serverTimestamp(),
-      });
+      };
+
+      console.log("Attempting to add customer to path:", `users/${user.uid}/customers`);
+      await addDoc(collection(db, `users/${user.uid}/customers`), customerData);
+      
       setFormData({ name: '', phone: '', type: 'Veg', price: '' });
       onClose();
     } catch (error) {
       console.error("Error adding customer:", error);
-      alert("Failed to add customer. Please try again.");
+      alert(`Failed to add customer: ${error.message}. Please check if you have permission.`);
     }
   };
 
