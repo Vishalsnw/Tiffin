@@ -28,7 +28,7 @@ const LoginPage = () => (
 const Dashboard = ({ user }) => {
   const handlePayment = () => {
     const options = {
-      key: "rzp_test_YOUR_KEY_HERE", // Should be env var
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
       amount: 50000,
       currency: "INR",
       name: "TiffinFlow Pro",
