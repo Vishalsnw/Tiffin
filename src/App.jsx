@@ -98,17 +98,26 @@ const Dashboard = ({ user, customers }) => {
   const nonVegCount = activeCustomers.filter(c => c.type === 'Non-Veg').length;
   const pausedCount = customers.filter(c => c.status === 'Paused').length;
   const pendingPayments = customers.reduce((acc, c) => acc + (c.balance || 0), 0);
+  const expiringSoonCount = customers.filter(c => {
+    if (!c.expiryDate) return false;
+    const expiry = new Date(c.expiryDate);
+    const today = new Date();
+    const diffTime = expiry - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays >= 0 && diffDays <= 3;
+  }).length;
 
   const stats = [
     { label: 'Total Meals Today', value: totalMeals, color: 'bg-orange-600', icon: Truck, full: true },
     { label: 'Veg Count', value: vegCount, color: 'bg-green-100 text-green-700' },
     { label: 'Non-Veg Count', value: nonVegCount, color: 'bg-rose-100 text-rose-700' },
-    { label: 'Paused Today', value: pausedCount, color: 'bg-gray-100 text-gray-600' },
+    { label: 'Paused Today', value: pausedCount, color: 'bg-amber-100 text-amber-700' },
+    { label: 'Expiring Soon (3 days)', value: expiringSoonCount, color: 'bg-orange-100 text-orange-700' },
     { label: 'Pending Payments', value: `₹${pendingPayments}`, color: 'bg-red-100 text-red-700' },
   ];
 
   return (
-    <div className="p-4 pt-6 pb-24">
+    <div className="p-4 pt-6 pb-24 max-w-full overflow-x-hidden min-h-screen">
       <div className="flex justify-between items-center mb-8 px-2">
         <div>
           <h2 className="text-sm font-bold text-orange-600 uppercase tracking-widest mb-1">TiffinFlow Pro</h2>
@@ -142,14 +151,17 @@ const Dashboard = ({ user, customers }) => {
 const CustomersScreen = ({ customers, user }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterArea, setFilterArea] = useState('All');
+  const [filterStatus, setFilterStatus] = useState('All');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
 
   const areas = ['All', ...new Set(customers.map(c => c.area).filter(Boolean))];
+  const statuses = ['All', 'Active', 'Paused', 'Expired'];
   
   const filteredCustomers = customers.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    (filterArea === 'All' || c.area === filterArea)
+    (filterArea === 'All' || c.area === filterArea) &&
+    (filterStatus === 'All' || c.status === filterStatus || (filterStatus === 'Active' && !c.status))
   );
 
   const handleUpdateStatus = async (customerId, newStatus) => {
@@ -173,30 +185,43 @@ const CustomersScreen = ({ customers, user }) => {
   };
 
   return (
-    <div className="p-4 pt-6 pb-24">
+    <div className="p-4 pt-6 pb-24 min-h-screen">
       <div className="px-2 mb-6">
-        <h2 className="text-3xl font-black mb-4">Customers</h2>
-        <div className="space-y-3">
+        <h2 className="text-3xl font-black mb-4 tracking-tight">Customers</h2>
+        <div className="space-y-4">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             <input 
               type="text" 
               placeholder="Search by name..." 
-              className="w-full bg-gray-100 border-none rounded-2xl py-4 pl-12 pr-4 font-bold text-gray-900 focus:ring-2 focus:ring-orange-600"
+              className="w-full bg-gray-100 border-none rounded-2xl py-4 pl-12 pr-4 font-bold text-gray-900 focus:ring-2 focus:ring-orange-600 transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-            {areas.map(area => (
-              <button 
-                key={area}
-                onClick={() => setFilterArea(area)}
-                className={`px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap border ${filterArea === area ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-100'}`}
-              >
-                {area}
-              </button>
-            ))}
+          <div className="space-y-2">
+            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+              {areas.map(area => (
+                <button 
+                  key={area}
+                  onClick={() => setFilterArea(area)}
+                  className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap border ${filterArea === area ? 'bg-gray-900 text-white border-gray-900 shadow-md' : 'bg-white text-gray-500 border-gray-100'}`}
+                >
+                  {area}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+              {statuses.map(status => (
+                <button 
+                  key={status}
+                  onClick={() => setFilterStatus(status)}
+                  className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap border ${filterStatus === status ? 'bg-orange-600 text-white border-orange-600 shadow-md' : 'bg-white text-gray-500 border-gray-100'}`}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -205,7 +230,7 @@ const CustomersScreen = ({ customers, user }) => {
         {filteredCustomers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 opacity-40">
             <Users size={64} strokeWidth={1} />
-            <p className="font-bold mt-4 uppercase tracking-widest text-xs">No customers found</p>
+            <p className="font-bold mt-4 uppercase tracking-widest text-[10px]">No customers found</p>
           </div>
         ) : (
           filteredCustomers.map((c) => (
@@ -215,7 +240,7 @@ const CustomersScreen = ({ customers, user }) => {
                 setSelectedCustomer(c);
                 setIsEditSheetOpen(true);
               }}
-              className="w-full bg-white p-5 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center justify-between text-left active:scale-[0.98] transition-all"
+              className="w-full bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between text-left active:scale-[0.98] transition-all"
             >
               <div className="flex items-center gap-4">
                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black ${c.type === 'Veg' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
@@ -223,13 +248,16 @@ const CustomersScreen = ({ customers, user }) => {
                 </div>
                 <div>
                   <p className="font-bold text-gray-900 text-lg leading-tight mb-1">{c.name}</p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${c.type === 'Veg' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
                       {c.type}
                     </span>
                     <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${c.status === 'Paused' ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-500'}`}>
                       {c.status || 'Active'}
                     </span>
+                    {c.remainingDays !== undefined && (
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{c.remainingDays} days left</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -248,17 +276,17 @@ const CustomersScreen = ({ customers, user }) => {
         title={selectedCustomer?.name || 'Customer Details'}
       >
         <div className="space-y-6">
-          <div className="flex justify-around py-4">
+          <div className="flex justify-around py-4 bg-gray-50 rounded-[2rem]">
             <div className="text-center">
-              <p className="text-2xl font-black">{selectedCustomer?.type}</p>
+              <p className="text-xl font-black">{selectedCustomer?.type}</p>
               <p className="text-[10px] font-bold text-gray-400 uppercase">Type</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-black">₹{selectedCustomer?.price}</p>
+              <p className="text-xl font-black">₹{selectedCustomer?.price}</p>
               <p className="text-[10px] font-bold text-gray-400 uppercase">Daily</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-black">{selectedCustomer?.area || 'N/A'}</p>
+              <p className="text-xl font-black">{selectedCustomer?.area || 'N/A'}</p>
               <p className="text-[10px] font-bold text-gray-400 uppercase">Area</p>
             </div>
           </div>
@@ -266,21 +294,21 @@ const CustomersScreen = ({ customers, user }) => {
           <div className="grid grid-cols-2 gap-3">
             <RippleButton 
               onClick={() => handleUpdateStatus(selectedCustomer.id, selectedCustomer.status === 'Paused' ? 'Active' : 'Paused')}
-              className={`py-4 rounded-2xl font-black ${selectedCustomer?.status === 'Paused' ? 'bg-green-600 text-white' : 'bg-amber-100 text-amber-600'}`}
+              className={`py-5 rounded-2xl font-black shadow-sm ${selectedCustomer?.status === 'Paused' ? 'bg-green-600 text-white' : 'bg-amber-100 text-amber-600'}`}
             >
               {selectedCustomer?.status === 'Paused' ? 'Resume' : 'Pause'}
             </RippleButton>
             <RippleButton 
               onClick={() => window.open(`tel:${selectedCustomer?.phone}`)}
-              className="bg-blue-600 text-white py-4 rounded-2xl font-black"
+              className="bg-blue-600 text-white py-5 rounded-2xl font-black shadow-sm flex items-center justify-center gap-2"
             >
-              Call
+              <Phone size={18} /> Call
             </RippleButton>
           </div>
 
           <RippleButton 
             onClick={() => handleDeleteCustomer(selectedCustomer.id)}
-            className="w-full bg-red-50 text-red-600 py-4 rounded-2xl font-black"
+            className="w-full bg-red-50 text-red-600 py-5 rounded-2xl font-black"
           >
             Delete Customer
           </RippleButton>
@@ -299,17 +327,17 @@ const TodayScreen = ({ customers }) => {
   const filtered = activeToday.filter(c => areaFilter === 'All' || c.area === areaFilter);
 
   return (
-    <div className="p-4 pt-6 pb-24">
+    <div className="p-4 pt-6 pb-24 min-h-screen">
       <div className="mb-8 px-2">
-        <p className="text-gray-500 font-bold uppercase tracking-widest text-xs mb-1">Production View</p>
+        <p className="text-orange-600 font-bold uppercase tracking-widest text-[10px] mb-2">Production View</p>
         <h2 className="text-4xl font-black text-gray-900 leading-tight">Aaj {activeToday.length} tiffin banana hai</h2>
         
-        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar mt-6">
+        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar mt-8">
           {areas.map(area => (
             <button 
               key={area}
               onClick={() => setAreaFilter(area)}
-              className={`px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap border ${areaFilter === area ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-500 border-gray-100'}`}
+              className={`px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap border ${areaFilter === area ? 'bg-orange-600 text-white border-orange-600 shadow-md' : 'bg-white text-gray-500 border-gray-100'}`}
             >
               {area}
             </button>
@@ -317,33 +345,40 @@ const TodayScreen = ({ customers }) => {
         </div>
       </div>
       
-      <div className="space-y-3">
+      <div className="space-y-4">
         {filtered.map((item) => (
-          <div key={item.id} className="bg-white p-6 rounded-[2.5rem] flex items-center justify-between border border-gray-100 shadow-sm active:bg-orange-50 transition-all">
-            <div>
-              <p className="font-bold text-gray-900 text-lg leading-none mb-2">{item.name}</p>
-              <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${item.type === 'Veg' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+          <div key={item.id} className="bg-white p-6 rounded-[2rem] flex items-center justify-between border border-gray-100 shadow-sm active:bg-orange-50 transition-all">
+            <div className="flex-1">
+              <p className="font-bold text-gray-900 text-lg leading-none mb-3">{item.name}</p>
+              <div className="flex items-center gap-3">
+                <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full ${item.type === 'Veg' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
                   {item.type}
                 </span>
                 {item.area && (
-                  <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1">
-                    <MapPin size={10} /> {item.area}
+                  <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1.5 uppercase tracking-wider">
+                    <MapPin size={12} className="text-gray-300" /> {item.area}
                   </span>
                 )}
               </div>
-              {item.note && <p className="text-xs text-orange-600 font-medium mt-2 italic">"{item.note}"</p>}
+              {item.note && (
+                <div className="mt-4 p-3 bg-orange-50 rounded-xl border border-orange-100">
+                  <p className="text-xs text-orange-700 font-medium italic">"{item.note}"</p>
+                </div>
+              )}
             </div>
             <RippleButton 
               onClick={() => window.open(`https://wa.me/91${item.phone}`)}
-              className="w-12 h-12 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center"
+              className="ml-4 w-14 h-14 bg-green-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-green-100 active:scale-90 transition-transform"
             >
               <MessageCircle size={24} />
             </RippleButton>
           </div>
         ))}
         {filtered.length === 0 && (
-          <p className="text-center py-20 text-gray-400 font-bold uppercase tracking-widest text-xs">No orders found</p>
+          <div className="text-center py-20 opacity-30">
+            <CalendarDays size={64} strokeWidth={1} className="mx-auto mb-4" />
+            <p className="font-bold uppercase tracking-widest text-[10px]">No orders found</p>
+          </div>
         )}
       </div>
     </div>
@@ -369,38 +404,43 @@ const PaymentsScreen = ({ customers, user }) => {
   };
 
   return (
-    <div className="p-4 pt-6 pb-24">
-      <h2 className="text-3xl font-black mb-6 px-2 text-gray-900">Payments</h2>
+    <div className="p-4 pt-6 pb-24 min-h-screen">
+      <h2 className="text-3xl font-black mb-8 px-2 text-gray-900 tracking-tight">Payments</h2>
       
-      <div className="bg-red-600 p-8 rounded-[2.5rem] shadow-xl text-white mb-8">
-        <p className="text-sm font-bold opacity-80 uppercase tracking-widest mb-2">Total Pending</p>
-        <p className="text-5xl font-black">₹{totalPending}</p>
+      <div className="bg-red-600 p-10 rounded-[2.5rem] shadow-2xl text-white mb-10 relative overflow-hidden">
+        <div className="relative z-10">
+          <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest mb-2">Total Pending Amount</p>
+          <p className="text-6xl font-black">₹{totalPending}</p>
+        </div>
+        <IndianRupee size={120} className="absolute -right-8 -bottom-8 opacity-10" />
       </div>
 
       <div className="space-y-4">
         {pendingCustomers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 opacity-40">
+          <div className="flex flex-col items-center justify-center py-20 opacity-30">
             <Wallet size={64} strokeWidth={1} />
-            <p className="font-bold mt-4 uppercase tracking-widest text-xs text-center">Sabka hisab clear hai!</p>
+            <p className="font-bold mt-4 uppercase tracking-widest text-[10px] text-center">Sabka hisab clear hai!</p>
           </div>
         ) : (
           pendingCustomers.map((c) => (
-            <div key={c.id} className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col gap-4">
-              <div className="flex justify-between items-center">
+            <div key={c.id} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col gap-6">
+              <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-bold text-gray-900 text-lg leading-tight">{c.name}</p>
-                  <p className="text-[10px] font-bold text-red-600 uppercase">Pending: ₹{c.balance}</p>
+                  <p className="font-bold text-gray-900 text-xl leading-tight mb-1">{c.name}</p>
+                  <p className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md inline-block ${c.balance > 1000 ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}`}>
+                    Pending: ₹{c.balance}
+                  </p>
                 </div>
                 <RippleButton 
                   onClick={() => sendReminder(c)}
-                  className="p-3 bg-green-50 text-green-600 rounded-2xl"
+                  className="p-4 bg-green-500 text-white rounded-2xl shadow-lg shadow-green-100 active:scale-95 transition-transform"
                 >
-                  <MessageCircle size={20} />
+                  <MessageCircle size={22} />
                 </RippleButton>
               </div>
               <RippleButton 
                 onClick={() => handleMarkAsPaid(c.id)}
-                className="w-full bg-gray-900 text-white py-4 rounded-2xl font-black text-sm"
+                className="w-full bg-gray-900 text-white py-5 rounded-2xl font-black text-sm shadow-xl active:scale-95 transition-transform"
               >
                 Mark as Paid
               </RippleButton>
@@ -492,7 +532,7 @@ const AddCustomerModal = ({ isOpen, onClose, user }) => {
 
   return (
     <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-md rounded-t-[3rem] p-8 pb-12 shadow-2xl animate-in slide-in-from-bottom-full duration-500 overflow-y-auto max-h-[95vh]">
+      <div className="bg-white w-full max-w-md rounded-t-[3rem] p-8 pb-12 shadow-2xl animate-in slide-in-from-bottom-full duration-500 overflow-y-auto max-h-[95vh] safe-area-bottom">
         <div className="w-12 h-1.5 bg-gray-100 rounded-full mx-auto mb-8" onClick={onClose} />
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-3xl font-black text-gray-900">Naya Customer</h2>
@@ -501,9 +541,9 @@ const AddCustomerModal = ({ isOpen, onClose, user }) => {
           </RippleButton>
         </div>
         
-        <form className="space-y-5" onSubmit={handleSubmit}>
+        <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Full Name</label>
+            <label className="text-[10px] font-black uppercase text-gray-400 ml-4 tracking-widest">Full Name</label>
             <input 
               type="text" 
               placeholder="e.g. Rahul Sharma" 
@@ -516,7 +556,7 @@ const AddCustomerModal = ({ isOpen, onClose, user }) => {
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Phone</label>
+              <label className="text-[10px] font-black uppercase text-gray-400 ml-4 tracking-widest">Phone</label>
               <input 
                 type="tel" 
                 placeholder="10 digit number" 
@@ -527,7 +567,7 @@ const AddCustomerModal = ({ isOpen, onClose, user }) => {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Area</label>
+              <label className="text-[10px] font-black uppercase text-gray-400 ml-4 tracking-widest">Area</label>
               <input 
                 type="text" 
                 placeholder="Area/Colony" 
@@ -540,18 +580,20 @@ const AddCustomerModal = ({ isOpen, onClose, user }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Meal Type</label>
-              <select 
-                className="w-full bg-gray-50 border-none rounded-2xl py-5 px-6 font-bold text-gray-900 focus:ring-4 focus:ring-orange-100 appearance-none"
-                value={formData.type}
-                onChange={(e) => setFormData({...formData, type: e.target.value})}
-              >
-                <option>Veg</option>
-                <option>Non-Veg</option>
-              </select>
+              <label className="text-[10px] font-black uppercase text-gray-400 ml-4 tracking-widest">Meal Type</label>
+              <div className="relative">
+                <select 
+                  className="w-full bg-gray-50 border-none rounded-2xl py-5 px-6 font-bold text-gray-900 focus:ring-4 focus:ring-orange-100 appearance-none"
+                  value={formData.type}
+                  onChange={(e) => setFormData({...formData, type: e.target.value})}
+                >
+                  <option>Veg</option>
+                  <option>Non-Veg</option>
+                </select>
+              </div>
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Daily Price</label>
+              <label className="text-[10px] font-black uppercase text-gray-400 ml-4 tracking-widest">Daily Price</label>
               <input 
                 type="number" 
                 placeholder="₹" 
@@ -564,7 +606,7 @@ const AddCustomerModal = ({ isOpen, onClose, user }) => {
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Special Note</label>
+            <label className="text-[10px] font-black uppercase text-gray-400 ml-4 tracking-widest">Special Note</label>
             <input 
               type="text" 
               placeholder="e.g. No spicy, Extra roti" 
@@ -665,51 +707,48 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans selection:bg-orange-100 antialiased overflow-x-hidden text-gray-900">
-      <div className="w-full min-h-screen relative flex flex-col pt-[env(safe-area-inset-top,0px)]">
-        
-        {/* Main Content */}
-        <div className="flex-1 overflow-y-auto no-scrollbar">
-          {renderContent()}
+    <div className="min-h-screen bg-white font-sans selection:bg-orange-100 antialiased overflow-x-hidden text-gray-900 flex flex-col">
+      {/* Main Content */}
+      <div className="flex-1 overflow-y-auto no-scrollbar safe-area-top pb-32">
+        {renderContent()}
+      </div>
+
+      {/* Floating Action Button */}
+      {(activeTab === 'Dashboard' || activeTab === 'Customers') && (
+        <div className="fixed bottom-28 right-6 z-[60]">
+          <RippleButton 
+            className="w-16 h-16 bg-orange-600 text-white rounded-full shadow-2xl flex items-center justify-center active:scale-90 transition-all hover:scale-105"
+            onClick={() => setIsModalOpen(true)}
+          >
+            <Plus size={32} strokeWidth={3} />
+          </RippleButton>
         </div>
+      )}
 
-        {/* Floating Action Button */}
-        {(activeTab === 'Dashboard' || activeTab === 'Customers') && (
-          <div className="fixed bottom-28 right-6 z-[60]">
-            <RippleButton 
-              className="w-16 h-16 bg-gray-900 text-white rounded-3xl shadow-2xl flex items-center justify-center active:scale-90 transition-all hover:scale-105"
-              onClick={() => setIsModalOpen(true)}
-            >
-              <Plus size={32} strokeWidth={3} />
-            </RippleButton>
-          </div>
-        )}
+      <AddCustomerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} user={user} />
 
-        <AddCustomerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} user={user} />
-
-        {/* Bottom Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-3xl border-t border-gray-100 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom,16px)+12px)] flex justify-around items-center z-50">
-          {[
-            { id: 'Dashboard', icon: LayoutDashboard, label: 'Home' },
-            { id: 'Customers', icon: Users, label: 'Customers' },
-            { id: 'Today', icon: CalendarDays, label: 'Today' },
-            { id: 'Payments', icon: Wallet, label: 'Payments' },
-            { id: 'Settings', icon: Settings, label: 'Settings' },
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === item.id ? 'text-orange-600' : 'text-gray-400'}`}
-            >
-              <div className={`p-3 rounded-2xl transition-all duration-300 ${activeTab === item.id ? 'bg-orange-50' : 'bg-transparent'}`}>
-                <item.icon size={26} strokeWidth={activeTab === item.id ? 2.5 : 2} />
-              </div>
-              <span className={`text-[10px] font-black uppercase tracking-tight ${activeTab === item.id ? 'opacity-100' : 'opacity-40'}`}>
-                {item.label}
-              </span>
-            </button>
-          ))}
-        </div>
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-3xl border-t border-gray-100 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+12px)] flex justify-around items-center z-50 h-[84px] safe-area-bottom">
+        {[
+          { id: 'Dashboard', icon: LayoutDashboard, label: 'Home' },
+          { id: 'Customers', icon: Users, label: 'Customers' },
+          { id: 'Today', icon: CalendarDays, label: 'Today' },
+          { id: 'Payments', icon: Wallet, label: 'Payments' },
+          { id: 'Settings', icon: Settings, label: 'Settings' },
+        ].map((item) => (
+          <button
+            key={item.id}
+            onClick={() => setActiveTab(item.id)}
+            className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === item.id ? 'text-orange-600' : 'text-gray-400'}`}
+          >
+            <div className={`p-3 rounded-2xl transition-all duration-300 ${activeTab === item.id ? 'bg-orange-50' : 'bg-transparent'}`}>
+              <item.icon size={24} strokeWidth={activeTab === item.id ? 2.5 : 2} />
+            </div>
+            <span className={`text-[10px] font-black uppercase tracking-tight ${activeTab === item.id ? 'opacity-100' : 'opacity-40'}`}>
+              {item.label}
+            </span>
+          </button>
+        ))}
       </div>
     </div>
   );
