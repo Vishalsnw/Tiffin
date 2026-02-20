@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "firebase/firestore";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, updateDoc, doc, deleteDoc } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAbHTfU_LEZRskt9tAXMRT9XRc8nQlDo9E",
@@ -28,4 +28,4 @@ export const loginWithGoogle = async () => {
 
 export const logout = () => signOut(auth);
 
-export { app, auth, db, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp };
+export { app, auth, db, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, updateDoc, doc, deleteDoc };

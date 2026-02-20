@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, CalendarDays, Wallet, Truck, BarChart3, LogOut, Menu, Moon, Sun, Plus, Search, Filter, Edit2, Trash2, X, Check, Bell, Settings, ChevronRight, Phone, LogIn, IndianRupee } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarDays, Wallet, Truck, BarChart3, LogOut, Menu, Moon, Sun, Plus, Search, Filter, Edit2, Trash2, X, Check, Bell, Settings, ChevronRight, Phone, LogIn, IndianRupee, MapPin, MessageCircle } from 'lucide-react';
 import Subscription from './Subscription';
 import PrivacyPolicy from './PrivacyPolicy';
-import { auth, loginWithGoogle, logout, db, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from './firebase';
+import { auth, loginWithGoogle, logout, db, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, updateDoc, doc, deleteDoc } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
 // --- Ripple Effect Component ---
-const RippleButton = ({ children, onClick, className = "", type = "button" }) => {
+const RippleButton = ({ children, onClick, className = "", type = "button", disabled = false }) => {
   const [ripples, setRipples] = useState([]);
 
   const createRipple = (event) => {
+    if (disabled) return;
     const button = event.currentTarget;
     const rect = button.getBoundingClientRect();
     const size = Math.max(rect.width, rect.height);
@@ -27,11 +28,12 @@ const RippleButton = ({ children, onClick, className = "", type = "button" }) =>
   return (
     <button
       type={type}
+      disabled={disabled}
       onClick={(e) => {
         createRipple(e);
         onClick && onClick(e);
       }}
-      className={`relative overflow-hidden ${className}`}
+      className={`relative overflow-hidden outline-none ${className} ${disabled ? 'opacity-50 grayscale' : ''}`}
     >
       {children}
       {ripples.map((ripple) => (
@@ -50,6 +52,25 @@ const RippleButton = ({ children, onClick, className = "", type = "button" }) =>
   );
 };
 
+// --- Bottom Sheet Component ---
+const BottomSheet = ({ isOpen, onClose, title, children }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white w-full max-w-md rounded-t-[2.5rem] p-8 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] overflow-y-auto">
+        <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6" onClick={onClose} />
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-black text-gray-900">{title}</h2>
+          <RippleButton onClick={onClose} className="p-2 bg-gray-100 rounded-full text-gray-500">
+            <X size={20} />
+          </RippleButton>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+};
+
 // --- Login Component ---
 const LoginPage = () => (
   <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-white">
@@ -57,7 +78,7 @@ const LoginPage = () => (
       <Truck size={48} />
     </div>
     <h1 className="text-4xl font-black text-gray-900 mb-2">TiffinFlow Pro</h1>
-    <p className="text-gray-500 mb-12 text-center max-w-xs">Manage your home kitchen business with ease.</p>
+    <p className="text-gray-500 mb-12 text-center max-w-xs font-medium">Manage your home kitchen business with ease.</p>
     
     <RippleButton 
       onClick={loginWithGoogle}
@@ -71,15 +92,27 @@ const LoginPage = () => (
 
 // --- Dashboard Component ---
 const Dashboard = ({ user, customers }) => {
-  const totalMeals = customers.length;
-  const vegCount = customers.filter(c => c.type === 'Veg').length;
-  const nonVegCount = customers.filter(c => c.type === 'Non-Veg').length;
+  const activeCustomers = customers.filter(c => c.status !== 'Paused');
+  const totalMeals = activeCustomers.length;
+  const vegCount = activeCustomers.filter(c => c.type === 'Veg').length;
+  const nonVegCount = activeCustomers.filter(c => c.type === 'Non-Veg').length;
+  const pausedCount = customers.filter(c => c.status === 'Paused').length;
+  const pendingPayments = customers.reduce((acc, c) => acc + (c.balance || 0), 0);
+
+  const stats = [
+    { label: 'Total Meals Today', value: totalMeals, color: 'bg-orange-600', icon: Truck, full: true },
+    { label: 'Veg Count', value: vegCount, color: 'bg-green-100 text-green-700' },
+    { label: 'Non-Veg Count', value: nonVegCount, color: 'bg-rose-100 text-rose-700' },
+    { label: 'Paused Today', value: pausedCount, color: 'bg-gray-100 text-gray-600' },
+    { label: 'Pending Payments', value: `₹${pendingPayments}`, color: 'bg-red-100 text-red-700' },
+  ];
 
   return (
     <div className="p-4 pt-6 pb-24">
       <div className="flex justify-between items-center mb-8 px-2">
         <div>
-          <h2 className="text-3xl font-black tracking-tight text-gray-900">Dashboard</h2>
+          <h2 className="text-sm font-bold text-orange-600 uppercase tracking-widest mb-1">TiffinFlow Pro</h2>
+          <h2 className="text-3xl font-black tracking-tight text-gray-900">{new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</h2>
           <p className="text-gray-500 text-sm font-medium">Namaste, {user?.displayName?.split(' ')[0] || 'Chef'}!</p>
         </div>
         <div className="flex gap-3">
@@ -87,32 +120,17 @@ const Dashboard = ({ user, customers }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 mb-8">
-        {[
-          { label: 'Total Meals Today', value: totalMeals, sub: 'All set for today', color: 'bg-orange-600', icon: Truck },
-          { label: 'Pending Payments', value: '₹0', sub: 'No overdue payments', color: 'bg-red-600', icon: Wallet },
-        ].map((stat, i) => (
-          <div key={i} className={`${stat.color} p-6 rounded-[2.5rem] shadow-lg text-white flex justify-between items-center relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer`}>
+      <div className="grid grid-cols-2 gap-4">
+        {stats.map((stat, i) => (
+          <div 
+            key={i} 
+            className={`${stat.color} ${stat.full ? 'col-span-2 p-8' : 'p-6 aspect-square'} rounded-[2.5rem] shadow-sm flex flex-col justify-between relative overflow-hidden active:scale-[0.98] transition-all cursor-pointer border border-black/5`}
+          >
             <div className="relative z-10">
-              <p className="text-sm font-bold opacity-80 mb-1 uppercase tracking-wider">{stat.label}</p>
-              <p className="text-4xl font-black mb-1">{stat.value}</p>
-              <p className="text-xs font-medium opacity-90">{stat.sub}</p>
+              <p className={`text-xs font-bold uppercase tracking-wider mb-2 ${stat.full ? 'opacity-80 text-white' : 'opacity-60'}`}>{stat.label}</p>
+              <p className={`font-black ${stat.full ? 'text-5xl text-white' : 'text-3xl'}`}>{stat.value}</p>
             </div>
-            <stat.icon size={64} className="opacity-20 absolute -right-4 -bottom-4" />
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        {[
-          { label: 'Veg Today', value: vegCount, color: 'bg-green-100 text-green-700' },
-          { label: 'Non-Veg Today', value: nonVegCount, color: 'bg-rose-100 text-rose-700' },
-          { label: 'Expiring Soon', value: '0', color: 'bg-amber-100 text-amber-700' },
-          { label: 'Today\'s Deliveries', value: totalMeals, color: 'bg-blue-100 text-blue-700' },
-        ].map((stat, i) => (
-          <div key={i} className={`${stat.color.split(' ')[0]} p-5 rounded-[2rem] flex flex-col justify-between aspect-[1.1/1] active:scale-95 transition-transform cursor-pointer`}>
-            <p className="text-sm font-bold opacity-70 uppercase tracking-tight leading-none mb-2">{stat.label}</p>
-            <p className={`text-3xl font-black ${stat.color.split(' ')[1]}`}>{stat.value}</p>
+            {stat.icon && <stat.icon size={80} className="opacity-10 absolute -right-4 -bottom-4 text-white" />}
           </div>
         ))}
       </div>
@@ -121,19 +139,84 @@ const Dashboard = ({ user, customers }) => {
 };
 
 // --- Customer List Screen ---
-const CustomersScreen = ({ customers }) => {
+const CustomersScreen = ({ customers, user }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterArea, setFilterArea] = useState('All');
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
+
+  const areas = ['All', ...new Set(customers.map(c => c.area).filter(Boolean))];
+  
+  const filteredCustomers = customers.filter(c => 
+    c.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    (filterArea === 'All' || c.area === filterArea)
+  );
+
+  const handleUpdateStatus = async (customerId, newStatus) => {
+    try {
+      await updateDoc(doc(db, `users/${user.uid}/customers`, customerId), { status: newStatus });
+      setIsEditSheetOpen(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteCustomer = async (customerId) => {
+    if (window.confirm("Are you sure you want to delete this customer?")) {
+      try {
+        await deleteDoc(doc(db, `users/${user.uid}/customers`, customerId));
+        setIsEditSheetOpen(false);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
   return (
     <div className="p-4 pt-6 pb-24">
-      <h2 className="text-3xl font-black mb-6 px-2">Customers</h2>
+      <div className="px-2 mb-6">
+        <h2 className="text-3xl font-black mb-4">Customers</h2>
+        <div className="space-y-3">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <input 
+              type="text" 
+              placeholder="Search by name..." 
+              className="w-full bg-gray-100 border-none rounded-2xl py-4 pl-12 pr-4 font-bold text-gray-900 focus:ring-2 focus:ring-orange-600"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+            {areas.map(area => (
+              <button 
+                key={area}
+                onClick={() => setFilterArea(area)}
+                className={`px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap border ${filterArea === area ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-100'}`}
+              >
+                {area}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <div className="space-y-4">
-        {customers.length === 0 ? (
+        {filteredCustomers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 opacity-40">
             <Users size={64} strokeWidth={1} />
-            <p className="font-bold mt-4 uppercase tracking-widest text-xs">No customers yet</p>
+            <p className="font-bold mt-4 uppercase tracking-widest text-xs">No customers found</p>
           </div>
         ) : (
-          customers.map((c, i) => (
-            <RippleButton key={i} className="w-full bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between text-left active:scale-[0.98] transition-transform">
+          filteredCustomers.map((c) => (
+            <RippleButton 
+              key={c.id} 
+              onClick={() => {
+                setSelectedCustomer(c);
+                setIsEditSheetOpen(true);
+              }}
+              className="w-full bg-white p-5 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center justify-between text-left active:scale-[0.98] transition-all"
+            >
               <div className="flex items-center gap-4">
                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black ${c.type === 'Veg' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
                   {c.name[0]}
@@ -144,47 +227,123 @@ const CustomersScreen = ({ customers }) => {
                     <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${c.type === 'Veg' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
                       {c.type}
                     </span>
-                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-gray-100 text-gray-500`}>
-                      Active
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${c.status === 'Paused' ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-500'}`}>
+                      {c.status || 'Active'}
                     </span>
                   </div>
                 </div>
               </div>
               <div className="text-right">
-                <p className={`text-lg font-black text-gray-900`}>₹{c.price || 0}</p>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Daily Price</p>
+                <p className={`text-lg font-black text-gray-900`}>₹{c.balance || 0}</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Balance</p>
               </div>
             </RippleButton>
           ))
         )}
       </div>
+
+      <BottomSheet 
+        isOpen={isEditSheetOpen} 
+        onClose={() => setIsEditSheetOpen(false)} 
+        title={selectedCustomer?.name || 'Customer Details'}
+      >
+        <div className="space-y-6">
+          <div className="flex justify-around py-4">
+            <div className="text-center">
+              <p className="text-2xl font-black">{selectedCustomer?.type}</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase">Type</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-black">₹{selectedCustomer?.price}</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase">Daily</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-black">{selectedCustomer?.area || 'N/A'}</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase">Area</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <RippleButton 
+              onClick={() => handleUpdateStatus(selectedCustomer.id, selectedCustomer.status === 'Paused' ? 'Active' : 'Paused')}
+              className={`py-4 rounded-2xl font-black ${selectedCustomer?.status === 'Paused' ? 'bg-green-600 text-white' : 'bg-amber-100 text-amber-600'}`}
+            >
+              {selectedCustomer?.status === 'Paused' ? 'Resume' : 'Pause'}
+            </RippleButton>
+            <RippleButton 
+              onClick={() => window.open(`tel:${selectedCustomer?.phone}`)}
+              className="bg-blue-600 text-white py-4 rounded-2xl font-black"
+            >
+              Call
+            </RippleButton>
+          </div>
+
+          <RippleButton 
+            onClick={() => handleDeleteCustomer(selectedCustomer.id)}
+            className="w-full bg-red-50 text-red-600 py-4 rounded-2xl font-black"
+          >
+            Delete Customer
+          </RippleButton>
+        </div>
+      </BottomSheet>
     </div>
   );
 };
 
 // --- Today's Production Screen ---
 const TodayScreen = ({ customers }) => {
+  const [areaFilter, setAreaFilter] = useState('All');
+  const activeToday = customers.filter(c => c.status !== 'Paused');
+  const areas = ['All', ...new Set(activeToday.map(c => c.area).filter(Boolean))];
+
+  const filtered = activeToday.filter(c => areaFilter === 'All' || c.area === areaFilter);
+
   return (
     <div className="p-4 pt-6 pb-24">
       <div className="mb-8 px-2">
         <p className="text-gray-500 font-bold uppercase tracking-widest text-xs mb-1">Production View</p>
-        <h2 className="text-4xl font-black text-gray-900 leading-tight">Aaj {customers.length} tiffin banana hai</h2>
+        <h2 className="text-4xl font-black text-gray-900 leading-tight">Aaj {activeToday.length} tiffin banana hai</h2>
+        
+        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar mt-6">
+          {areas.map(area => (
+            <button 
+              key={area}
+              onClick={() => setAreaFilter(area)}
+              className={`px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap border ${areaFilter === area ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-500 border-gray-100'}`}
+            >
+              {area}
+            </button>
+          ))}
+        </div>
       </div>
       
       <div className="space-y-3">
-        {customers.map((item, i) => (
-          <div key={i} className="bg-white p-5 rounded-[2rem] flex items-center justify-between border border-gray-100 shadow-sm active:bg-orange-50 active:border-orange-100 transition-all">
+        {filtered.map((item) => (
+          <div key={item.id} className="bg-white p-6 rounded-[2.5rem] flex items-center justify-between border border-gray-100 shadow-sm active:bg-orange-50 transition-all">
             <div>
-              <p className="font-bold text-gray-900 text-lg leading-none mb-1">{item.name}</p>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-tight">{item.phone} • <span className={item.type === 'Veg' ? 'text-green-600' : 'text-red-600'}>{item.type}</span></p>
+              <p className="font-bold text-gray-900 text-lg leading-none mb-2">{item.name}</p>
+              <div className="flex items-center gap-2">
+                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${item.type === 'Veg' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                  {item.type}
+                </span>
+                {item.area && (
+                  <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1">
+                    <MapPin size={10} /> {item.area}
+                  </span>
+                )}
+              </div>
+              {item.note && <p className="text-xs text-orange-600 font-medium mt-2 italic">"{item.note}"</p>}
             </div>
-            <div className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-300">
-              <ChevronRight size={20} />
-            </div>
+            <RippleButton 
+              onClick={() => window.open(`https://wa.me/91${item.phone}`)}
+              className="w-12 h-12 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center"
+            >
+              <MessageCircle size={24} />
+            </RippleButton>
           </div>
         ))}
-        {customers.length === 0 && (
-          <p className="text-center py-20 text-gray-400 font-bold uppercase tracking-widest text-xs">No orders today</p>
+        {filtered.length === 0 && (
+          <p className="text-center py-20 text-gray-400 font-bold uppercase tracking-widest text-xs">No orders found</p>
         )}
       </div>
     </div>
@@ -192,19 +351,62 @@ const TodayScreen = ({ customers }) => {
 };
 
 // --- Payments Screen ---
-const PaymentsScreen = () => {
+const PaymentsScreen = ({ customers, user }) => {
+  const pendingCustomers = customers.filter(c => (c.balance || 0) > 0);
+  const totalPending = pendingCustomers.reduce((acc, c) => acc + (c.balance || 0), 0);
+
+  const handleMarkAsPaid = async (customerId) => {
+    try {
+      await updateDoc(doc(db, `users/${user.uid}/customers`, customerId), { balance: 0 });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const sendReminder = (customer) => {
+    const msg = `Namaste ${customer.name}, TiffinFlow ki taraf se reminder. Aapka ₹${customer.balance} pending hai. Kripya pay karein. Dhanyavad!`;
+    window.open(`https://wa.me/91${customer.phone}?text=${encodeURIComponent(msg)}`);
+  };
+
   return (
     <div className="p-4 pt-6 pb-24">
-      <h2 className="text-3xl font-black mb-6 px-2">Payments</h2>
+      <h2 className="text-3xl font-black mb-6 px-2 text-gray-900">Payments</h2>
       
-      <div className="bg-gray-900 p-8 rounded-[2.5rem] shadow-xl text-white mb-8">
+      <div className="bg-red-600 p-8 rounded-[2.5rem] shadow-xl text-white mb-8">
         <p className="text-sm font-bold opacity-80 uppercase tracking-widest mb-2">Total Pending</p>
-        <p className="text-5xl font-black">₹0</p>
+        <p className="text-5xl font-black">₹{totalPending}</p>
       </div>
 
-      <div className="flex flex-col items-center justify-center py-20 opacity-40">
-        <Wallet size={64} strokeWidth={1} />
-        <p className="font-bold mt-4 uppercase tracking-widest text-xs text-center">Sabka hisab clear hai!</p>
+      <div className="space-y-4">
+        {pendingCustomers.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 opacity-40">
+            <Wallet size={64} strokeWidth={1} />
+            <p className="font-bold mt-4 uppercase tracking-widest text-xs text-center">Sabka hisab clear hai!</p>
+          </div>
+        ) : (
+          pendingCustomers.map((c) => (
+            <div key={c.id} className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col gap-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="font-bold text-gray-900 text-lg leading-tight">{c.name}</p>
+                  <p className="text-[10px] font-bold text-red-600 uppercase">Pending: ₹{c.balance}</p>
+                </div>
+                <RippleButton 
+                  onClick={() => sendReminder(c)}
+                  className="p-3 bg-green-50 text-green-600 rounded-2xl"
+                >
+                  <MessageCircle size={20} />
+                </RippleButton>
+              </div>
+              <RippleButton 
+                onClick={() => handleMarkAsPaid(c.id)}
+                className="w-full bg-gray-900 text-white py-4 rounded-2xl font-black text-sm"
+              >
+                Mark as Paid
+              </RippleButton>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
@@ -221,23 +423,33 @@ const SettingsScreen = ({ user, onLogout }) => {
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-4">
+        <div className="bg-gray-50 p-6 rounded-[2rem] flex items-center gap-4">
+          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center overflow-hidden">
+            {user?.photoURL ? <img src={user.photoURL} alt="" /> : <Users className="text-gray-300" />}
+          </div>
+          <div>
+            <p className="font-black text-lg">{user?.displayName}</p>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Administrator</p>
+          </div>
+        </div>
+
         <RippleButton 
           onClick={onLogout}
-          className="w-full bg-red-50 p-5 rounded-2xl flex items-center justify-between text-left group mt-8"
+          className="w-full bg-red-50 p-6 rounded-[2rem] flex items-center justify-between text-left mt-8"
         >
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-white rounded-xl text-red-600">
+            <div className="p-3 bg-white rounded-xl text-red-600 shadow-sm">
               <LogOut size={20} />
             </div>
-            <span className="font-bold text-red-600">Logout</span>
+            <span className="font-black text-red-600">Logout</span>
           </div>
           <ChevronRight size={20} className="text-red-200" />
         </RippleButton>
       </div>
       
       <div className="mt-12 px-4">
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">TiffinFlow Pro v1.0.0</p>
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">TiffinFlow Pro v2.0.0 (Native Build)</p>
       </div>
     </div>
   );
@@ -249,7 +461,9 @@ const AddCustomerModal = ({ isOpen, onClose, user }) => {
     name: '',
     phone: '',
     type: 'Veg',
-    price: ''
+    price: '',
+    area: '',
+    note: ''
   });
 
   if (!isOpen) return null;
@@ -257,70 +471,78 @@ const AddCustomerModal = ({ isOpen, onClose, user }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (!user) {
-        alert("Please login first");
-        return;
-      }
+      if (!user) return;
       
       const customerData = {
-        name: formData.name,
-        phone: formData.phone,
-        type: formData.type,
+        ...formData,
         price: Number(formData.price),
+        balance: 0,
+        status: 'Active',
         createdAt: serverTimestamp(),
       };
 
-      console.log("Attempting to add customer to path:", `users/${user.uid}/customers`);
       await addDoc(collection(db, `users/${user.uid}/customers`), customerData);
-      
-      setFormData({ name: '', phone: '', type: 'Veg', price: '' });
+      setFormData({ name: '', phone: '', type: 'Veg', price: '', area: '', note: '' });
       onClose();
     } catch (error) {
-      console.error("Error adding customer:", error);
-      alert(`Failed to add customer: ${error.message}. Please check if you have permission.`);
+      console.error(error);
+      alert("Failed to save.");
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-8 duration-300">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-black text-gray-900">Add Customer</h2>
-          <RippleButton onClick={onClose} className="p-2 bg-gray-100 rounded-full text-gray-500">
-            <X size={20} />
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white w-full max-w-md rounded-t-[3rem] p-8 pb-12 shadow-2xl animate-in slide-in-from-bottom-full duration-500 overflow-y-auto max-h-[95vh]">
+        <div className="w-12 h-1.5 bg-gray-100 rounded-full mx-auto mb-8" onClick={onClose} />
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-3xl font-black text-gray-900">Naya Customer</h2>
+          <RippleButton onClick={onClose} className="p-3 bg-gray-50 rounded-full text-gray-400">
+            <X size={24} />
           </RippleButton>
         </div>
         
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="space-y-5" onSubmit={handleSubmit}>
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Full Name</label>
             <input 
               type="text" 
               placeholder="e.g. Rahul Sharma" 
-              className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 font-bold text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-orange-600 transition-all" 
+              className="w-full bg-gray-50 border-none rounded-2xl py-5 px-6 font-bold text-lg text-gray-900 placeholder:text-gray-300 focus:ring-4 focus:ring-orange-100 transition-all" 
               required 
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
             />
           </div>
           
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Phone Number</label>
-            <input 
-              type="tel" 
-              placeholder="+91 00000 00000" 
-              className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 font-bold text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-orange-600 transition-all" 
-              required 
-              value={formData.phone}
-              onChange={(e) => setFormData({...formData, phone: e.target.value})}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Phone</label>
+              <input 
+                type="tel" 
+                placeholder="10 digit number" 
+                className="w-full bg-gray-50 border-none rounded-2xl py-5 px-6 font-bold text-gray-900 focus:ring-4 focus:ring-orange-100" 
+                required 
+                value={formData.phone}
+                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Area</label>
+              <input 
+                type="text" 
+                placeholder="Area/Colony" 
+                className="w-full bg-gray-50 border-none rounded-2xl py-5 px-6 font-bold text-gray-900 focus:ring-4 focus:ring-orange-100" 
+                value={formData.area}
+                onChange={(e) => setFormData({...formData, area: e.target.value})}
+              />
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
               <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Meal Type</label>
               <select 
-                className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 font-bold text-gray-900 focus:ring-2 focus:ring-orange-600 appearance-none"
+                className="w-full bg-gray-50 border-none rounded-2xl py-5 px-6 font-bold text-gray-900 focus:ring-4 focus:ring-orange-100 appearance-none"
                 value={formData.type}
                 onChange={(e) => setFormData({...formData, type: e.target.value})}
               >
@@ -328,12 +550,12 @@ const AddCustomerModal = ({ isOpen, onClose, user }) => {
                 <option>Non-Veg</option>
               </select>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="space-y-1">
               <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Daily Price</label>
               <input 
                 type="number" 
                 placeholder="₹" 
-                className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 font-bold text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-orange-600 transition-all" 
+                className="w-full bg-gray-50 border-none rounded-2xl py-5 px-6 font-bold text-gray-900 focus:ring-4 focus:ring-orange-100" 
                 required 
                 value={formData.price}
                 onChange={(e) => setFormData({...formData, price: e.target.value})}
@@ -341,7 +563,18 @@ const AddCustomerModal = ({ isOpen, onClose, user }) => {
             </div>
           </div>
 
-          <RippleButton type="submit" className="w-full bg-orange-600 text-white font-black py-5 rounded-2xl mt-6 shadow-lg shadow-orange-600/30 active:scale-95 transition-all">
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Special Note</label>
+            <input 
+              type="text" 
+              placeholder="e.g. No spicy, Extra roti" 
+              className="w-full bg-gray-50 border-none rounded-2xl py-5 px-6 font-bold text-gray-900 focus:ring-4 focus:ring-orange-100" 
+              value={formData.note}
+              onChange={(e) => setFormData({...formData, note: e.target.value})}
+            />
+          </div>
+
+          <RippleButton type="submit" className="w-full bg-orange-600 text-white font-black py-6 rounded-3xl mt-6 shadow-2xl shadow-orange-600/30 active:scale-95 transition-all text-xl">
             Save Customer
           </RippleButton>
         </form>
@@ -407,9 +640,12 @@ export default function App() {
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white p-12">
-      <div className="w-20 h-20 bg-gray-100 rounded-[2rem] animate-pulse mb-6"></div>
-      <div className="w-48 h-4 bg-gray-100 rounded-full animate-pulse mb-2"></div>
-      <div className="w-32 h-3 bg-gray-50 rounded-full animate-pulse"></div>
+      <div className="w-20 h-20 bg-orange-50 rounded-[2.5rem] flex items-center justify-center mb-6">
+        <Truck className="text-orange-600 animate-bounce" size={40} />
+      </div>
+      <div className="w-48 h-4 bg-gray-50 rounded-full overflow-hidden">
+        <div className="h-full bg-orange-600 animate-loading-bar" />
+      </div>
     </div>
   );
 
@@ -420,31 +656,31 @@ export default function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'Dashboard': return <Dashboard user={user} customers={customers} />;
-      case 'Customers': return <CustomersScreen customers={customers} />;
+      case 'Customers': return <CustomersScreen customers={customers} user={user} />;
       case 'Today': return <TodayScreen customers={customers} />;
-      case 'Payments': return <PaymentsScreen />;
+      case 'Payments': return <PaymentsScreen customers={customers} user={user} />;
       case 'Settings': return <SettingsScreen user={user} onLogout={logout} />;
       default: return <Dashboard user={user} customers={customers} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans selection:bg-orange-100 antialiased overflow-x-hidden">
-      <div className="max-w-md mx-auto min-h-screen relative flex flex-col pt-[env(safe-area-inset-top,0px)]">
+    <div className="min-h-screen bg-white font-sans selection:bg-orange-100 antialiased overflow-x-hidden text-gray-900">
+      <div className="w-full min-h-screen relative flex flex-col pt-[env(safe-area-inset-top,0px)]">
         
         {/* Main Content */}
-        <div className="flex-1 animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto no-scrollbar">
           {renderContent()}
         </div>
 
-        {/* Floating Action Button - Only on relevant screens */}
+        {/* Floating Action Button */}
         {(activeTab === 'Dashboard' || activeTab === 'Customers') && (
-          <div className="fixed bottom-28 right-6 z-[60] pointer-events-none">
+          <div className="fixed bottom-28 right-6 z-[60]">
             <RippleButton 
-              className="w-14 h-14 bg-orange-600 text-white rounded-2xl shadow-[0_12px_40px_rgba(234,88,12,0.4)] flex items-center justify-center pointer-events-auto active:scale-90 transition-all hover:scale-105"
+              className="w-16 h-16 bg-gray-900 text-white rounded-3xl shadow-2xl flex items-center justify-center active:scale-90 transition-all hover:scale-105"
               onClick={() => setIsModalOpen(true)}
             >
-              <Plus size={28} strokeWidth={3} />
+              <Plus size={32} strokeWidth={3} />
             </RippleButton>
           </div>
         )}
@@ -452,9 +688,9 @@ export default function App() {
         <AddCustomerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} user={user} />
 
         {/* Bottom Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/90 backdrop-blur-3xl border-t border-gray-100 px-2 pt-2 pb-[calc(env(safe-area-inset-bottom,16px)+8px)] flex justify-around items-center z-50">
+        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-3xl border-t border-gray-100 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom,16px)+12px)] flex justify-around items-center z-50">
           {[
-            { id: 'Dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+            { id: 'Dashboard', icon: LayoutDashboard, label: 'Home' },
             { id: 'Customers', icon: Users, label: 'Customers' },
             { id: 'Today', icon: CalendarDays, label: 'Today' },
             { id: 'Payments', icon: Wallet, label: 'Payments' },
@@ -463,12 +699,12 @@ export default function App() {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`flex flex-col items-center gap-1 px-2 py-1.5 min-w-[64px] transition-all duration-300 ${activeTab === item.id ? 'text-orange-600' : 'text-gray-400'}`}
+              className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === item.id ? 'text-orange-600' : 'text-gray-400'}`}
             >
-              <div className={`p-2 rounded-2xl transition-all duration-300 ${activeTab === item.id ? 'bg-orange-50 scale-110' : 'bg-transparent scale-100'}`}>
-                <item.icon size={24} strokeWidth={activeTab === item.id ? 2.5 : 2} />
+              <div className={`p-3 rounded-2xl transition-all duration-300 ${activeTab === item.id ? 'bg-orange-50' : 'bg-transparent'}`}>
+                <item.icon size={26} strokeWidth={activeTab === item.id ? 2.5 : 2} />
               </div>
-              <span className={`text-[9px] font-bold uppercase tracking-tight transition-all duration-300 ${activeTab === item.id ? 'opacity-100 translate-y-0' : 'opacity-60 translate-y-0.5'}`}>
+              <span className={`text-[10px] font-black uppercase tracking-tight ${activeTab === item.id ? 'opacity-100' : 'opacity-40'}`}>
                 {item.label}
               </span>
             </button>
