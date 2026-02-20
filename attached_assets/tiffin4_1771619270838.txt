@@ -1,0 +1,226 @@
+You are upgrading an existing React + Firebase SaaS app called “TiffinFlow”.
+
+The app is already functional and includes:
+- Dashboard
+- Customers
+- Payments
+- Pause system
+- Google login
+- Firebase Firestore
+
+This app will be converted into a WebView-based Android app.
+
+Your task is to:
+
+1. Refactor the codebase
+2. Remove Google login completely
+3. Implement Firebase Phone OTP authentication
+4. Improve structure and performance
+5. Make the app Android WebView ready
+6. Ensure proper Firebase security
+
+Do NOT rebuild from scratch.
+Upgrade and refactor the existing project.
+
+--------------------------------------------------
+1️⃣ REMOVE GOOGLE LOGIN
+--------------------------------------------------
+
+- Remove all Google authentication logic
+- Remove Google login button
+- Remove loginWithGoogle references
+- Clean unused imports
+- Clean auth flow
+
+--------------------------------------------------
+2️⃣ IMPLEMENT PHONE OTP LOGIN (Firebase)
+--------------------------------------------------
+
+Add:
+
+- Phone number input field
+- OTP verification screen
+- reCAPTCHA invisible setup (WebView compatible)
+- Auto verification handling
+- Proper loading states
+- Error handling for invalid number or wrong OTP
+
+Flow:
+
+Step 1:
+User enters mobile number
+
+Step 2:
+OTP sent via Firebase
+
+Step 3:
+User enters OTP
+
+Step 4:
+If verified → user authenticated
+
+Make UI simple and mobile-friendly.
+
+Important:
+OTP screen must feel like Android app, not website.
+
+--------------------------------------------------
+3️⃣ REFACTOR APP STRUCTURE (Very Important)
+--------------------------------------------------
+
+Split App.jsx into proper modules:
+
+Create structure:
+
+/components
+   Dashboard.jsx
+   Customers.jsx
+   Today.jsx
+   Payments.jsx
+   Settings.jsx
+   BottomNav.jsx
+   Header.jsx
+   CustomerCard.jsx
+   PaymentCard.jsx
+
+/hooks
+   useAuth.js
+   useCustomers.js
+   usePayments.js
+
+/utils
+   dateUtils.js
+   mealLogic.js
+
+Remove monolithic structure.
+Make components reusable and clean.
+
+--------------------------------------------------
+4️⃣ ADD PROPER ROUTING
+--------------------------------------------------
+
+Implement proper routing system.
+
+Each page must have its own route:
+
+- /dashboard
+- /customers
+- /today
+- /payments
+- /settings
+
+Back navigation must work properly inside WebView.
+
+--------------------------------------------------
+5️⃣ FIREBASE DATA STRUCTURE FIX
+--------------------------------------------------
+
+Ensure all data is scoped under user ID.
+
+Use structure like:
+
+users/{uid}/customers
+users/{uid}/payments
+
+Never use global collections.
+
+Ensure proper Firebase security rules:
+
+- User can only read/write their own data
+- No public access
+
+--------------------------------------------------
+6️⃣ ANDROID WEBVIEW OPTIMIZATION
+--------------------------------------------------
+
+Ensure:
+
+- Full-width layout
+- No horizontal scroll
+- No zoom allowed
+- Safe bottom padding for bottom nav
+- Add meta theme-color
+- Add proper viewport meta tag
+
+Disable unnecessary desktop styles.
+
+--------------------------------------------------
+7️⃣ PERFORMANCE OPTIMIZATION
+--------------------------------------------------
+
+- Remove unused imports
+- Remove console logs
+- Optimize useEffect dependencies
+- Prevent unnecessary re-renders
+- Use proper cleanup for listeners
+- Lazy load routes if possible
+
+App must run smoothly on mid-range Android phones.
+
+--------------------------------------------------
+8️⃣ DASHBOARD REFINEMENT
+--------------------------------------------------
+
+Keep only essential cards:
+
+- Total Meals Today
+- Veg Count
+- Non-Veg Count
+- Paused Today
+- Pending Payments
+- Expiring Soon
+
+Remove heavy analytics.
+Keep it simple.
+
+--------------------------------------------------
+9️⃣ UX IMPROVEMENTS
+--------------------------------------------------
+
+Add:
+
+- Toast notifications
+- Skeleton loading states
+- Empty state screens
+- Confirmation bottom sheets
+- Ripple effect on buttons
+- Large touch-friendly buttons
+
+--------------------------------------------------
+🔟 PAUSE & MEAL LOGIC VALIDATION
+--------------------------------------------------
+
+Ensure:
+
+- Paused customers excluded from today’s count
+- Expired users not included
+- Subscription extends correctly after pause
+- No double counting
+- Proper timezone handling
+
+--------------------------------------------------
+1️⃣1️⃣ SETTINGS PAGE
+--------------------------------------------------
+
+Add:
+
+- Business name update
+- Contact number display
+- Logout
+- App version display
+
+--------------------------------------------------
+FINAL GOAL
+--------------------------------------------------
+
+Transform this project into:
+
+- Clean modular structure
+- Phone OTP login only
+- Firebase secure
+- Android WebView optimized
+- Simple for Indian home-based tiffin providers
+- Production-ready SaaS MVP
+
+Do not over-engineer.
+Keep it simple, fast, and scalable.
