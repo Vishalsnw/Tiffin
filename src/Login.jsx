@@ -23,7 +23,7 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     setupRecaptcha();
-    const phoneNumber = phone.startsWith('+') ? phone : `+91${phone}`;
+    const phoneNumber = phone.startsWith('+') ? phone : `+91${phone.replace(/\D/g, '')}`;
     const appVerifier = window.recaptchaVerifier;
 
     try {
