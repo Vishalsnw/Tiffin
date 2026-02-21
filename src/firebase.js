@@ -1,17 +1,20 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, signOut } from "firebase/auth";
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, updateDoc, doc, deleteDoc } from "firebase/firestore";
+import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIZA_REPLACED_FOR_SAFETY",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "tiffin-ff3cc.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "tiffin-ff3cc",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "tiffin-ff3cc.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "708196896667",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:708196896667:web:8368ff437548aa19481b3e"
+  apiKey: "AIzaSyAbHTfU_LEZRskt9tAXMRT9XRc8nQlDo9E",
+  authDomain: "tiffin-ff3cc.firebaseapp.com",
+  projectId: "tiffin-ff3cc",
+  storageBucket: "tiffin-ff3cc.firebasestorage.app",
+  messagingSenderId: "708196896667",
+  appId: "1:708196896667:web:8368ff437548aa19481b3e",
+  measurementId: "G-M8RGHCE7ZP"
 };
 
 const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
