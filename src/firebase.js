@@ -1,8 +1,19 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, signOut } from "firebase/auth";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, updateDoc, doc, deleteDoc } from "firebase/firestore";
-import { getAnalytics } from "firebase/analytics";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  serverTimestamp,
+  updateDoc,
+  doc,
+  deleteDoc
+} from "firebase/firestore";
 
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAbHTfU_LEZRskt9tAXMRT9XRc8nQlDo9E",
   authDomain: "tiffin-ff3cc.firebaseapp.com",
@@ -13,11 +24,28 @@ const firebaseConfig = {
   measurementId: "G-M8RGHCE7ZP"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+
+// Initialize Services (NO analytics)
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// Logout helper
 export const logout = () => signOut(auth);
 
-export { app, auth, db, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, updateDoc, doc, deleteDoc };
+// Export everything needed
+export {
+  app,
+  auth,
+  db,
+  collection,
+  addDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  serverTimestamp,
+  updateDoc,
+  doc,
+  deleteDoc
+};
