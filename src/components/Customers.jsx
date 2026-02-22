@@ -3,18 +3,19 @@ import { Search, Phone, MessageCircle, MapPin, Trash2 } from 'lucide-react';
 import { RippleButton, BottomSheet } from './Common';
 import { updateDoc, doc, db, deleteDoc } from '../firebase';
 
-const CustomersScreen = ({ customers, user }) => {
+const CustomersScreen = ({ customers = [], user }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterArea, setFilterArea] = useState('All');
   const [filterStatus, setFilterStatus] = useState('All');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
 
-  const areas = ['All', ...new Set(customers.map(c => c.area).filter(Boolean))];
+  const safeCustomers = customers || [];
+  const areas = ['All', ...new Set(safeCustomers.map(c => c.area).filter(Boolean))];
   const statuses = ['All', 'Active', 'Paused', 'Expired'];
   
-  const filteredCustomers = customers.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+  const filteredCustomers = safeCustomers.filter(c => 
+    (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) &&
     (filterArea === 'All' || c.area === filterArea) &&
     (filterStatus === 'All' || c.status === filterStatus || (filterStatus === 'Active' && !c.status))
   );

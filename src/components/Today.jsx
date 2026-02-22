@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { CalendarDays, MapPin, MessageCircle } from 'lucide-react';
 import { RippleButton } from './Common';
 
-const TodayScreen = ({ customers }) => {
+const TodayScreen = ({ customers = [] }) => {
   const [areaFilter, setAreaFilter] = useState('All');
-  const activeToday = customers.filter(c => c.status !== 'Paused');
+  const safeCustomers = customers || [];
+  const activeToday = safeCustomers.filter(c => c.status !== 'Paused');
   const areas = ['All', ...new Set(activeToday.map(c => c.area).filter(Boolean))];
   const filtered = activeToday.filter(c => areaFilter === 'All' || c.area === areaFilter);
 

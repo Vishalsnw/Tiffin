@@ -3,8 +3,9 @@ import { IndianRupee, MessageCircle, Wallet } from 'lucide-react';
 import { RippleButton } from './Common';
 import { updateDoc, doc, db } from '../firebase';
 
-const PaymentsScreen = ({ customers, user }) => {
-  const pendingCustomers = customers.filter(c => (c.balance || 0) > 0);
+const PaymentsScreen = ({ customers = [], user }) => {
+  const safeCustomers = customers || [];
+  const pendingCustomers = safeCustomers.filter(c => (c.balance || 0) > 0);
   const totalPending = pendingCustomers.reduce((acc, c) => acc + (c.balance || 0), 0);
 
   const handleMarkAsPaid = async (customerId) => {

@@ -11,16 +11,22 @@ import SettingsScreen from './components/Settings';
 import BottomNav from './components/BottomNav';
 
 function App() {
-  const { user, loading } = useAuth();
-  const { customers } = useCustomers(user?.uid);
+  const { user, loading: authLoading } = useAuth();
+  const { customers, loading: customersLoading } = useCustomers(user?.uid);
 
-  if (loading) return (
+  if (authLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-white">
       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
     </div>
   );
 
   if (!user) return <Login />;
+
+  if (customersLoading) return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+    </div>
+  );
 
   return (
     <BrowserRouter>

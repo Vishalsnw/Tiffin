@@ -4,9 +4,9 @@ import { RippleButton } from './Common';
 import { formatDate } from '../utils/dateUtils';
 import { calculateMealStats } from '../utils/mealLogic';
 
-const Dashboard = ({ user, customers }) => {
-  const stats = calculateMealStats(customers);
-  const expiringSoonCount = customers.filter(c => {
+const Dashboard = ({ user, customers = [] }) => {
+  const stats = calculateMealStats(customers || []);
+  const expiringSoonCount = (customers || []).filter(c => {
     if (!c.expiryDate) return false;
     const expiry = new Date(c.expiryDate);
     const today = new Date();
@@ -23,6 +23,8 @@ const Dashboard = ({ user, customers }) => {
     { label: 'Expiring Soon (3 days)', value: expiringSoonCount, color: 'bg-orange-100 text-orange-700' },
     { label: 'Pending Payments', value: `₹${stats.pendingPayments}`, color: 'bg-red-100 text-red-700' },
   ];
+
+  if (!customers) return null;
 
   return (
     <div className="p-4 pt-6 pb-24 max-w-full overflow-x-hidden min-h-screen">
