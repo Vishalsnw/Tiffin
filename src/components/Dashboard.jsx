@@ -5,14 +5,19 @@ import { formatDate } from '../utils/dateUtils';
 import { calculateMealStats } from '../utils/mealLogic';
 
 const Dashboard = ({ user, customers = [] }) => {
-  const stats = calculateMealStats(customers || []);
-  const expiringSoonCount = (customers || []).filter(c => {
-    if (!c.expiryDate) return false;
-    const expiry = new Date(c.expiryDate);
-    const today = new Date();
-    const diffTime = expiry - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays >= 0 && diffDays <= 3;
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+  const stats = calculateMealStats(safeCustomers);
+  const expiringSoonCount = safeCustomers.filter(c => {
+    if (!c?.expiryDate) return false;
+    try {
+      const expiry = new Date(c.expiryDate);
+      const today = new Date();
+      const diffTime = expiry - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays >= 0 && diffDays <= 3;
+    } catch (e) {
+      return false;
+    }
   }).length;
 
   const statCards = [

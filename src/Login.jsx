@@ -32,7 +32,16 @@ const Login = () => {
       setShowOtp(true);
     } catch (error) {
       console.error("Error during signInWithPhoneNumber", error);
-      alert("Invalid phone number or reCAPTCHA failed.");
+      if (error.code === 'auth/captcha-check-failed') {
+        alert("reCAPTCHA check failed. Please refresh and try again.");
+      } else {
+        alert("Error sending OTP: " + error.message);
+      }
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.render().then(widgetId => {
+          grecaptcha.reset(widgetId);
+        });
+      }
     } finally {
       setLoading(false);
     }

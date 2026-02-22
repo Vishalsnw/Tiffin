@@ -1,6 +1,12 @@
 export const formatDate = (date) => {
-  if (!date) return '';
-  return new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  try {
+    if (!date) return '';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  } catch (e) {
+    return '';
+  }
 };
 
 export const getDaysRemaining = (expiryDate) => {

@@ -28,15 +28,18 @@ function App() {
     </div>
   );
 
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-orange-100 selection:text-orange-900">
         <Routes>
-          <Route path="/dashboard" element={<Dashboard user={user} customers={customers} />} />
-          <Route path="/customers" element={<CustomersScreen user={user} customers={customers} />} />
-          <Route path="/today" element={<TodayScreen customers={customers} />} />
-          <Route path="/payments" element={<PaymentsScreen user={user} customers={customers} />} />
+          <Route path="/dashboard" element={<Dashboard user={user} customers={safeCustomers} />} />
+          <Route path="/customers" element={<CustomersScreen user={user} customers={safeCustomers} />} />
+          <Route path="/today" element={<TodayScreen customers={safeCustomers} />} />
+          <Route path="/payments" element={<PaymentsScreen user={user} customers={safeCustomers} />} />
           <Route path="/settings" element={<SettingsScreen user={user} />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
         <BottomNav />
